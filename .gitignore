@@ -1,0 +1,13 @@
+# Python scripts (배포 불필요)
+*.py
+__pycache__/
+
+# 개별 시험 JSON (all_questions.json 하나만 사용)
+2016_*회_*.json
+2017_*회_*.json
+2018_*회_*.json
+2019_*회_*.json
+2020_*회_*.json
+2021_*회_*.json
+2022_*회_*.json
+2024_*회_*.json
