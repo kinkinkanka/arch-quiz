@@ -849,6 +849,22 @@ async function doAuth() {
 
   _sbUser = result.data.user;
   $('home-user').textContent = '👤 ' + _fromEmail(_sbUser.email);
+
+  // init()이 auth로 리다이렉트되면서 문제 데이터를 건너뜀 → 여기서 로딩
+  try { A.recs = JSON.parse(localStorage.getItem('arch_recs') || '{}'); } catch(e) {}
+  A.key   = localStorage.getItem('arch_key') || '';
+  A.model = localStorage.getItem('arch_model') || 'gpt-4o';
+
+  if (!A.qs.length) {
+    const cached = localStorage.getItem('arch_qs');
+    if (cached) { try { A.qs = JSON.parse(cached); } catch(e) {} }
+    if (!A.qs.length) await fetchDB();
+    buildYearChips();
+    updateStats();
+    loadChat();
+    SFX.init();
+  }
+
   await loadUserData();
   go('home');
 }
