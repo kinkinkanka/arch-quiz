@@ -896,7 +896,9 @@ async function loadUserData() {
     .select('*').eq('user_id', _sbUser.id).order('answered_at');
   if (recs) {
     recs.forEach(r => {
-      A.recs[`${r.year}_${r.round}_${r.q_id}`] = { correct: r.correct, date: r.answered_at };
+      const uid = `${r.year}_${r.round}_${r.q_id}`;
+      A.recs[uid] = { correct: r.correct, date: r.answered_at };
+      if (r.exp) A.recs[uid].exp = r.exp;
     });
     localStorage.setItem('arch_recs', JSON.stringify(A.recs));
     updateStats();
@@ -914,11 +916,26 @@ async function loadUserData() {
   }
 }
 
-function sbSyncRecord(q, correct) {
+function sbSyncRecord(q, correct, exp) {
   if (!_sbUser) return;
-  sb.from('quiz_records').insert({
-    user_id: _sbUser.id, year: q.year, round: q.round, q_id: q.id, correct
-  }).then(() => {});
+  const row = { user_id: _sbUser.id, year: q.year, round: q.round, q_id: q.id, correct };
+  if (exp !== undefined) row.exp = exp;
+  sb.from('quiz_records')
+    .upsert(row, { onConflict: 'user_id,year,round,q_id' })
+    .then(() => {});
+}
+
+let _chatSessionId = null;
+function sbAutoSaveChat() {
+  if (!_sbUser || !A.chat.length) return;
+  if (!_chatSessionId) _chatSessionId = Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const userMsgs = A.chat.filter(m => m.role === 'user');
+  if (!userMsgs.length) return;
+  const title = userMsgs.slice(0, 2).map(m => m.content.replace(/\n/g,' ').substring(0, 20)).join(' / ');
+  sb.from('chat_history').upsert(
+    { user_id: _sbUser.id, session_id: _chatSessionId, title, messages: A.chat },
+    { onConflict: 'user_id,session_id' }
+  ).then(() => {});
 }
 
 function sbSyncSettings() {
@@ -1145,6 +1162,7 @@ function startQuiz() {
   if (A.fCnt > 0) qs = qs.slice(0, A.fCnt);
 
   A.sess = { qs, idx: 0, ans: new Array(qs.length).fill(-1), ok: 0 };
+  _chatSessionId = null;
   go('quiz');
   renderQ();
 }
@@ -1366,6 +1384,7 @@ async function loadExp() {
 
     // Cache
     if (A.recs[q.uid]) { A.recs[q.uid].exp = exp; saveRecs(); }
+    sbSyncRecord(q, A.recs[q.uid]?.correct ?? false, exp);
 
     $('exp-content').innerHTML = renderMd(exp);
     $('q-exp-box').style.display = 'block';
@@ -1574,6 +1593,7 @@ function saveChat() {
 function clearChat() {
   if (!confirm('대화 내역을 모두 삭제할까요?')) return;
   A.chat = [];
+  _chatSessionId = null;
   localStorage.removeItem('arch_chat');
   renderChatBot();
 }
@@ -1678,6 +1698,7 @@ async function doSend(text, msgsEl, inpEl) {
     typingEl.remove();
     A.chat.push({ role: 'assistant', content: reply });
     saveChat();
+    sbAutoSaveChat();
     renderChatBot();
   } catch(e) {
     typingEl.remove();
