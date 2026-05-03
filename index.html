@@ -986,17 +986,26 @@ function renderQ() {
   badge.textContent = q.subject;
   badge.className   = 'sbadge s' + q.subject;
 
-  $('q-exam').textContent      = `${q.year}년 ${q.round}회 ${q.id}번`;
-  $('q-text').textContent = q.question || '(문제 텍스트 미추출)';
+  $('q-exam').textContent = `${q.year}년 ${q.round}회 ${q.id}번`;
+  const textEl = $('q-text');
+  textEl.style.display = '';
+  textEl.textContent = q.question || '(문제 텍스트 미추출)';
+
+  // PUA 문자(-) = PDF 특수폰트 인코딩 → 텍스트가 □로 깨짐
+  const hasPUA = /[-]/.test(q.question || '');
 
   // Image: 항상 로드 시도, 파일 없으면 숨김
-  // has_image=True인데 파일도 없을 때만 노란 안내 표시
   const imgEl = $('q-img');
   $('q-img-note').style.display = 'none';
   imgEl.style.display = 'block';
   imgEl.src = `images/${q.uid}.png`;
+  imgEl.onload = function() {
+    // PDF 렌더 이미지가 있으면 깨진 텍스트 숨김 (이미지에 올바른 텍스트 포함)
+    if (hasPUA) textEl.style.display = 'none';
+  };
   imgEl.onerror = function() {
     this.style.display = 'none';
+    textEl.style.display = '';
     if (q.hasImg) $('q-img-note').style.display = 'block';
   };
 
