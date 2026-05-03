@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#2563eb">
 <title>건축기사 필기 기출 퀴즈</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --primary: #2563eb;
@@ -430,6 +431,33 @@ input, select, textarea {
   #chat-input-area { padding-bottom:calc(10px + env(safe-area-inset-bottom)); }
 }
 @media (min-width:900px) { body.in-quiz #chat-fab { display:none !important; } }
+
+/* ── Auth screen ── */
+.auth-wrap {
+  flex:1; display:flex; align-items:center; justify-content:center;
+  padding:24px 16px; min-height:100vh;
+}
+.auth-card {
+  background:var(--card); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:32px 28px;
+  width:100%; max-width:380px;
+}
+.auth-logo { text-align:center; margin-bottom:24px; }
+.auth-logo .icon { font-size:48px; }
+.auth-logo h2 { font-size:20px; font-weight:700; margin-top:8px; }
+.auth-tabs { display:flex; gap:8px; margin-bottom:20px; }
+.auth-err { color:var(--error); font-size:13px; margin-bottom:10px; display:none; }
+.auth-footer { text-align:center; font-size:12px; color:var(--muted); margin-top:16px; }
+.user-bar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:6px 12px; background:var(--bg); border-radius:8px;
+  font-size:13px; color:var(--muted); margin-bottom:8px;
+}
+.user-bar button {
+  background:none; border:none; font-size:12px; color:var(--error);
+  cursor:pointer; padding:2px 6px; border-radius:4px;
+}
+.user-bar button:hover { background:#fee2e2; }
 </style>
 </head>
 <body>
@@ -446,6 +474,35 @@ input, select, textarea {
   </div>
 </div>
 
+<!-- ════════════════════════════════════ AUTH ═══ -->
+<div class="screen" id="s-auth">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <div class="icon">🏗️</div>
+        <h2>건축기사 필기 퀴즈</h2>
+      </div>
+      <div class="auth-tabs">
+        <button class="btn btn-primary" id="tab-login" onclick="showAuthTab('login')" style="flex:1">로그인</button>
+        <button class="btn btn-outline" id="tab-signup" onclick="showAuthTab('signup')" style="flex:1">회원가입</button>
+      </div>
+      <div class="field">
+        <label>아이디</label>
+        <input id="auth-id" type="text" placeholder="아이디 입력" autocomplete="username"
+          onkeydown="if(event.key==='Enter')$('auth-pw').focus()">
+      </div>
+      <div class="field">
+        <label>비밀번호</label>
+        <input id="auth-pw" type="password" placeholder="비밀번호 (6자 이상)" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')doAuth()">
+      </div>
+      <div class="auth-err" id="auth-err"></div>
+      <button class="btn btn-primary" id="auth-submit" onclick="doAuth()">로그인</button>
+      <div class="auth-footer">아이디는 영문·숫자만 권장 · 비밀번호 6자 이상</div>
+    </div>
+  </div>
+</div>
+
 <!-- ════════════════════════════════════ HOME ═══ -->
 <div class="screen" id="s-home">
   <div class="hero">
@@ -454,6 +511,10 @@ input, select, textarea {
     <p id="home-info">기출문제 로딩 중...</p>
   </div>
   <div class="wrap">
+    <div class="user-bar" id="home-user-bar">
+      <span id="home-user">👤 로딩 중...</span>
+      <button onclick="signOut()">로그아웃</button>
+    </div>
     <div class="card">
       <div class="stat-grid">
         <div class="stat-item"><div class="stat-num" id="st-total">0</div><div class="stat-lbl">총 풀이 수</div></div>
@@ -739,9 +800,134 @@ const A = {
 };
 
 // ══════════════════════════════════════════════════════════
+// SUPABASE AUTH & SYNC
+// ══════════════════════════════════════════════════════════
+const SUPA_URL = 'https://qtmicbwahiamcstkzrhx.supabase.co';
+const SUPA_KEY = 'sb_publishable_Sbq_spaRbDlB4X-E9CUcaA_luXZgD6I';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+let _sbUser = null;
+
+function _toEmail(id) { return id.trim().toLowerCase() + '@arch-quiz.local'; }
+function _fromEmail(email) { return (email || '').replace('@arch-quiz.local', ''); }
+
+let _authMode = 'login';
+function showAuthTab(mode) {
+  _authMode = mode;
+  $('tab-login').className  = mode === 'login'  ? 'btn btn-primary' : 'btn btn-outline';
+  $('tab-signup').className = mode === 'signup' ? 'btn btn-primary' : 'btn btn-outline';
+  $('auth-submit').textContent = mode === 'login' ? '로그인' : '회원가입';
+  $('auth-err').style.display = 'none';
+}
+
+async function doAuth() {
+  const id  = ($('auth-id').value || '').trim();
+  const pw  = ($('auth-pw').value || '');
+  const err = $('auth-err');
+  err.style.display = 'none';
+  if (!id) { err.textContent = '아이디를 입력하세요.'; err.style.display = ''; return; }
+  if (pw.length < 6) { err.textContent = '비밀번호는 6자 이상이어야 합니다.'; err.style.display = ''; return; }
+
+  const btn = $('auth-submit');
+  btn.disabled = true; btn.textContent = '처리 중...';
+
+  const email = _toEmail(id);
+  const result = _authMode === 'login'
+    ? await sb.auth.signInWithPassword({ email, password: pw })
+    : await sb.auth.signUp({ email, password: pw });
+
+  btn.disabled = false;
+  showAuthTab(_authMode);
+
+  if (result.error) {
+    const m = result.error.message;
+    err.textContent = m.includes('Invalid login') ? '아이디 또는 비밀번호가 틀렸습니다.' :
+                      m.includes('already registered') ? '이미 사용 중인 아이디입니다.' :
+                      m.includes('confirm') ? '이메일 인증 비활성화가 필요합니다. (Auth → Providers → Email → Confirm email OFF)' : m;
+    err.style.display = '';
+    return;
+  }
+
+  _sbUser = result.data.user;
+  $('home-user').textContent = '👤 ' + _fromEmail(_sbUser.email);
+  await loadUserData();
+  go('home');
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  _sbUser = null;
+  A.key = ''; A.recs = {}; A.chat = [];
+  localStorage.removeItem('arch_key');
+  localStorage.removeItem('arch_recs');
+  localStorage.removeItem(HIST_KEY);
+  go('auth');
+}
+
+async function loadUserData() {
+  if (!_sbUser) return;
+
+  const { data: cfg } = await sb.from('user_settings')
+    .select('*').eq('user_id', _sbUser.id).maybeSingle();
+  if (cfg) {
+    if (cfg.api_key) { A.key = cfg.api_key; localStorage.setItem('arch_key', A.key); }
+    const s = cfg.settings || {};
+    if (s.model) { A.model = s.model; localStorage.setItem('arch_model', s.model); }
+    if (s.track !== undefined) { SFX._trackIdx = +s.track; localStorage.setItem('arch_track', s.track); const sel = $('music-track'); if (sel) sel.value = String(s.track); }
+    if (s.bg !== undefined) { SFX._bgEnabled = !!s.bg; localStorage.setItem('arch_bg', s.bg ? '1' : '0'); }
+  }
+
+  const { data: recs } = await sb.from('quiz_records')
+    .select('*').eq('user_id', _sbUser.id).order('answered_at');
+  if (recs) {
+    recs.forEach(r => {
+      A.recs[`${r.year}_${r.round}_${r.q_id}`] = { correct: r.correct, date: r.answered_at };
+    });
+    localStorage.setItem('arch_recs', JSON.stringify(A.recs));
+    updateStats();
+  }
+
+  const { data: chats } = await sb.from('chat_history')
+    .select('*').eq('user_id', _sbUser.id).order('created_at', { ascending: false }).limit(60);
+  if (chats && chats.length) {
+    const hist = chats.map(c => ({
+      id: c.id, title: c.title,
+      date: new Date(c.created_at).toLocaleDateString('ko-KR'),
+      messages: c.messages
+    }));
+    localStorage.setItem(HIST_KEY, JSON.stringify(hist));
+  }
+}
+
+function sbSyncRecord(q, correct) {
+  if (!_sbUser) return;
+  sb.from('quiz_records').insert({
+    user_id: _sbUser.id, year: q.year, round: q.round, q_id: q.id, correct
+  }).then(() => {});
+}
+
+function sbSyncSettings() {
+  if (!_sbUser) return;
+  sb.from('user_settings').upsert({
+    user_id: _sbUser.id, api_key: A.key,
+    settings: { bg: SFX._bgEnabled, track: SFX._trackIdx, model: A.model }
+  }, { onConflict: 'user_id' }).then(() => {});
+}
+
+function sbSyncChat(title, messages) {
+  if (!_sbUser) return;
+  sb.from('chat_history').insert({ user_id: _sbUser.id, title, messages }).then(() => {});
+}
+
+// ══════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════
 async function init() {
+  // 세션 확인
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { go('auth'); return; }
+  _sbUser = session.user;
+  $('home-user').textContent = '👤 ' + _fromEmail(_sbUser.email);
+
   // Load persisted data
   try { A.recs  = JSON.parse(localStorage.getItem('arch_recs') || '{}'); } catch(e) {}
   A.key   = localStorage.getItem('arch_key') || '';
@@ -799,6 +985,7 @@ function boot() {
   updateStats();
   loadChat();
   SFX.init();
+  loadUserData();   // Supabase 데이터 백그라운드 동기화
   go('home');
 }
 
@@ -1055,6 +1242,7 @@ function answer(ua) {
     unknownAnswer,
   };
   saveRecs();
+  sbSyncRecord(q, isOk);
 
   // Highlight choices
   $$('.choice').forEach((btn, i) => {
@@ -1281,6 +1469,7 @@ function saveKey() {
   A.model = $('model-sel').value;
   localStorage.setItem('arch_key',   A.key);
   localStorage.setItem('arch_model', A.model);
+  sbSyncSettings();
   toast('저장되었습니다.');
   setTimeout(() => go('home'), 900);
 }
@@ -1650,12 +1839,14 @@ const SFX = {
     this._bgEnabled ? this.bgStart() : this.bgStop();
     const btn = $('btn-music');
     if (btn) btn.textContent = this._bgEnabled ? '🎵' : '🔇';
+    sbSyncSettings();
   },
 
   changeTrack(idx) {
     this._trackIdx = +idx;
     localStorage.setItem('arch_track', idx);
     if (this._bgEnabled) { this.bgStop(); setTimeout(() => this.bgStart(), 1500); }
+    sbSyncSettings();
   },
 
   init() {
@@ -1683,9 +1874,11 @@ function saveChatHistory() {
   const userMsgs = A.chat.filter(m => m.role === 'user');
   if (!userMsgs.length) { toast('저장할 대화 내용이 없습니다.'); return; }
   const title = userMsgs.slice(0, 3).map(m => m.content.replace(/\n/g,' ').substring(0, 18)).join(' / ');
+  const messages = [...A.chat];
   const hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
-  hist.unshift({ id: Date.now(), title, date: new Date().toLocaleDateString('ko-KR'), messages: [...A.chat] });
+  hist.unshift({ id: Date.now(), title, date: new Date().toLocaleDateString('ko-KR'), messages });
   localStorage.setItem(HIST_KEY, JSON.stringify(hist.slice(0, 60)));
+  sbSyncChat(title, messages);
   toast('대화가 저장되었습니다.');
 }
 
