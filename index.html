@@ -1235,11 +1235,18 @@ function renderQ() {
   ce.innerHTML = '';
   const nums = ['①','②','③','④'];
   const choiceList = q.choices.length > 0 ? q.choices : ['','','',''];
+  const allChoicesImage = choiceList.every(c => !c.replace(/^[①②③④❶❷❸❹➀➁➂➃]\s*/, '').trim());
+  if (allChoicesImage) {
+    const note = document.createElement('p');
+    note.style.cssText = 'font-size:0.82rem;color:#888;margin:0 0 8px;';
+    note.textContent = '▲ 선택지 수식은 위 이미지를 참조하세요';
+    ce.appendChild(note);
+  }
   choiceList.forEach((c, i) => {
     const btn = document.createElement('button');
     btn.className = 'choice';
     const rawText = c.replace(/^[①②③④❶❷❸❹➀➁➂➃]\s*/, '').trim();
-    btn.innerHTML = `<span class="choice-num">${nums[i]}</span><span>${rawText || '(그림·수식 참조)'}</span>`;
+    btn.innerHTML = `<span class="choice-num">${nums[i]}</span><span>${rawText || '(이미지 참조)'}</span>`;
     btn.onclick = () => answer(i + 1);
     ce.appendChild(btn);
   });
@@ -1398,10 +1405,13 @@ async function loadExp() {
 }
 
 function buildPrompt(q, ua) {
-  const choices = q.choices.map((c, i) => {
-    const t = c.replace(/^[①②③④❶❷❸❹➀➁➂➃]\s*/, '').trim() || '(그림·수식 참조)';
-    return `${i+1}번. ${t}`;
-  }).join('\n');
+  const allChoicesImage = q.choices.every(c => !c.replace(/^[①②③④❶❷❸❹➀➁➂➃]\s*/, '').trim());
+  const choices = allChoicesImage
+    ? '(이미지에 수식 보기 포함 — 텍스트 추출 불가)'
+    : q.choices.map((c, i) => {
+        const t = c.replace(/^[①②③④❶❷❸❹➀➁➂➃]\s*/, '').trim() || '(그림 참조)';
+        return `${i+1}번. ${t}`;
+      }).join('\n');
 
   let p = `건축기사 필기 기출문제 해설을 부탁드립니다.\n\n`;
   p += `[문제]\n${q.question}\n\n[보기]\n${choices}\n\n[정답] ${q.answer}번`;
