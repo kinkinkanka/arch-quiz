@@ -1450,18 +1450,16 @@ function renderQ() {
   // PUA 문자(-) = PDF 특수폰트 인코딩 → 텍스트가 □로 깨짐
   const hasPUA = /[-]/.test(q.question || '');
 
-  // Full-page image (문제+선지 전체) — 있으면 full mode로 전환
-  A.sess._fullMode = false;
+  // 문제 텍스트 이미지 (선지 제외) — 있으면 텍스트 대신 이미지 표시
   const fullImgEl = $('q-full-img');
   fullImgEl.style.display = 'none';
   fullImgEl.src = `images/full/${q.uid}.png`;
   fullImgEl.onload = function() {
-    A.sess._fullMode = true;
+    // 문제 텍스트는 이미지로 대체, 선지는 JSON 텍스트 버튼 유지 (정답 노출 방지)
     textEl.style.display = 'none';
     $('q-img').style.display = 'none';
     $('q-img-note').style.display = 'none';
     fullImgEl.style.display = 'block';
-    renderFullModeChoices($('q-choices'));
   };
   fullImgEl.onerror = function() { this.style.display = 'none'; };
 
@@ -1553,7 +1551,7 @@ function answer(ua) {
   sbSyncRecord(q, isOk);
 
   // Highlight choices
-  $$('.choice, .choice-plain').forEach((btn, i) => {
+  $$('.choice').forEach((btn, i) => {
     btn.disabled = true;
     if (!unknownAnswer) {
       const cn = i + 1;
