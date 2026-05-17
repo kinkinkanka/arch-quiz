@@ -532,11 +532,12 @@ input, select, textarea {
       </div>
     </div>
     <div class="card" id="trend-card" style="display:none">
-      <div class="sec">실력 추이 (세션별 정답률)</div>
-      <svg id="trend-svg" width="100%" height="90" style="overflow:visible;display:block"></svg>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px">
-        <span>← 이전 세션</span><span>최근 →</span>
-      </div>
+      <div class="sec">📈 실력 추이</div>
+      <svg id="trend-svg" width="100%" height="130" style="overflow:visible;display:block"></svg>
+    </div>
+    <div class="card" id="subj-chart-card">
+      <div class="sec">📊 과목별 정답률</div>
+      <div id="subj-bars"></div>
     </div>
     <button class="btn btn-primary" onclick="go('filter')">✏️ 퀴즈 시작</button>
     <button class="btn btn-outline" id="btn-undone" onclick="startQuickUndone()">🆕 미풀이 문제 풀기</button>
@@ -1145,6 +1146,8 @@ function updateStats() {
 
   const btnU = $('btn-undone');
   if (btnU) { btnU.disabled = notDone === 0; btnU.style.opacity = notDone === 0 ? '.45' : '1'; }
+
+  renderSubjChart();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1222,37 +1225,121 @@ function renderTrendChart() {
   const sessions = A.sessions || [];
   if (sessions.length < 2) { card.style.display = 'none'; return; }
   card.style.display = 'block';
+
   const svg = $('trend-svg');
-  const W = svg.clientWidth || 300;
-  const H = 80;
-  const PAD = 20;
-  const data = sessions.map(s => s.total > 0 ? Math.round(s.correct / s.total * 100) : 0);
+  const W   = svg.clientWidth || 300;
+  const H   = 130;
+  const PL  = 30;  // 좌측 % 레이블
+  const PR  = 8;
+  const PT  = 14;  // 상단 점 레이블 여유
+  const PB  = 22;  // 하단 날짜 레이블
+  const cH  = H - PT - PB;
+  const cW  = W - PL - PR;
+
+  const data = sessions.map(s => ({
+    rate:   s.total > 0 ? Math.round(s.correct / s.total * 100) : 0,
+    detail: s.total > 0 ? `${s.correct}/${s.total}` : '',
+    date:   (s.date || '').slice(5), // MM-DD
+  }));
   const n = data.length;
-  const toX = i => PAD + (i / Math.max(n - 1, 1)) * (W - PAD * 2);
-  const toY = v => H - PAD - (v / 100) * (H - PAD * 2);
-  const y60 = toY(60);
+  const toX = i  => PL + (i / Math.max(n - 1, 1)) * cW;
+  const toY = v  => PT + ((100 - v) / 100) * cH;
+
   let html = '';
-  // 60% 합격선
-  html += `<line x1="${PAD}" y1="${y60}" x2="${W - PAD}" y2="${y60}" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,3"/>`;
-  html += `<text x="${W - PAD + 3}" y="${y60 + 4}" font-size="9" fill="#d97706">60%</text>`;
-  // 면적 채우기 + 꺾은선
+
+  // 격자선 + % 레이블 (20·40·60·80·100)
+  [20, 40, 60, 80, 100].forEach(pct => {
+    const y   = toY(pct);
+    const hot = pct === 60 || pct === 80;
+    const col = pct === 60 ? '#d97706' : pct === 80 ? '#16a34a' : '#94a3b8';
+    const sw  = hot ? 1.2 : 0.7;
+    const da  = hot ? '' : '3,4';
+    html += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${(W-PR).toFixed(1)}" y2="${y.toFixed(1)}" stroke="${hot?(pct===60?'#fbbf24':'#86efac'):'#e2e8f0'}" stroke-width="${sw}" ${da?`stroke-dasharray="${da}"`:''} />`;
+    html += `<text x="${PL-4}" y="${(y+3.5).toFixed(1)}" text-anchor="end" font-size="9" fill="${col}" font-weight="${hot?'700':'400'}">${pct}</text>`;
+  });
+
+  // 면적
   if (n > 1) {
-    const poly = `${toX(0)},${H - PAD} ` + data.map((v,i) => `${toX(i)},${toY(v)}`).join(' ') + ` ${toX(n-1)},${H - PAD}`;
-    html += `<polygon points="${poly}" fill="rgba(37,99,235,0.09)"/>`;
-    const pathD = data.map((v,i) => `${i===0?'M':'L'}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ');
+    const poly = `${toX(0).toFixed(1)},${(H-PB).toFixed(1)} ` +
+      data.map((d,i)=>`${toX(i).toFixed(1)},${toY(d.rate).toFixed(1)}`).join(' ') +
+      ` ${toX(n-1).toFixed(1)},${(H-PB).toFixed(1)}`;
+    html += `<polygon points="${poly}" fill="rgba(37,99,235,0.07)"/>`;
+    const pathD = data.map((d,i)=>`${i===0?'M':'L'}${toX(i).toFixed(1)},${toY(d.rate).toFixed(1)}`).join(' ');
     html += `<path d="${pathD}" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
   }
-  // 점 + 양끝 레이블
-  data.forEach((v, i) => {
-    const x = toX(i).toFixed(1), y = toY(v).toFixed(1);
-    const col = v >= 60 ? '#16a34a' : '#dc2626';
-    html += `<circle cx="${x}" cy="${y}" r="3.5" fill="${col}" stroke="#fff" stroke-width="1.5"/>`;
-    if (i === 0 || i === n - 1) {
-      const anchor = i === 0 ? 'start' : 'end';
-      html += `<text x="${x}" y="${toY(v) - 7}" text-anchor="${anchor}" font-size="10" fill="${col}" font-weight="700">${v}%</text>`;
+
+  // 점 + 수치 레이블 + 날짜 레이블
+  const showAll = n <= 9;
+  const dateStep = Math.ceil(n / 6);
+  data.forEach((d, i) => {
+    const x   = toX(i), y = toY(d.rate);
+    const col = d.rate >= 60 ? '#16a34a' : '#dc2626';
+    const anc = i === 0 ? 'start' : i === n-1 ? 'end' : 'middle';
+
+    html += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${col}" stroke="#fff" stroke-width="2"/>`;
+
+    // 수치 (모든 점 or 첫/마지막)
+    if (showAll || i === 0 || i === n-1) {
+      html += `<text x="${x.toFixed(1)}" y="${(y-8).toFixed(1)}" text-anchor="${anc}" font-size="10" fill="${col}" font-weight="700">${d.rate}%</text>`;
+    }
+
+    // 날짜
+    if (d.date && (i === 0 || i === n-1 || i % dateStep === 0)) {
+      html += `<text x="${x.toFixed(1)}" y="${(H-5).toFixed(1)}" text-anchor="${anc}" font-size="9" fill="#94a3b8">${d.date}</text>`;
     }
   });
+
   svg.innerHTML = html;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('height', H);
+}
+
+function renderSubjChart() {
+  const el = $('subj-bars');
+  if (!el) return;
+  const SUBJS = ['건축계획','건축시공','건축구조','건축설비','건축법규'];
+  const COLORS = { 건축계획:'#2563eb', 건축시공:'#16a34a', 건축구조:'#d97706', 건축설비:'#7c3aed', 건축법규:'#dc2626' };
+
+  // 과목별 집계
+  const stats = {};
+  SUBJS.forEach(s => stats[s] = { correct: 0, done: 0, total: 0 });
+  A.qs.forEach(q => stats[q.subject] && stats[q.subject].total++);
+  A.qs.forEach(q => {
+    const rec = A.recs[q.uid];
+    if (!rec || rec.unknownAnswer) return;
+    stats[q.subject].done++;
+    if (rec.correct) stats[q.subject].correct++;
+  });
+
+  const hasData = SUBJS.some(s => stats[s].done > 0);
+  if (!hasData) {
+    el.innerHTML = '<p style="text-align:center;color:var(--muted);font-size:13px;padding:8px 0">문제를 풀면 과목별 분석이 표시됩니다</p>';
+    return;
+  }
+
+  el.innerHTML = SUBJS.map(s => {
+    const d   = stats[s];
+    const pct = d.done > 0 ? Math.round(d.correct / d.done * 100) : 0;
+    const col = pct >= 80 ? 'var(--success)' : pct >= 60 ? 'var(--warn)' : 'var(--error)';
+    const donePct = d.total > 0 ? Math.round(d.done / d.total * 100) : 0;
+    const barColor = COLORS[s] || 'var(--primary)';
+    return `
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span style="font-size:13px;font-weight:600;color:var(--text)">${s}</span>
+        <span style="font-size:12px;font-weight:700;color:${col}">${pct}%</span>
+      </div>
+      <div style="position:relative;height:12px;background:var(--border);border-radius:6px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${barColor};border-radius:6px;opacity:0.85;transition:width .5s"></div>
+        <div style="position:absolute;top:0;left:60%;height:100%;width:1.5px;background:#fbbf24"></div>
+        <div style="position:absolute;top:0;left:80%;height:100%;width:1.5px;background:#86efac"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:3px">
+        <span>정답 ${d.correct} / 풀이 ${d.done}문제</span>
+        <span>달성 ${d.done}/${d.total} (${donePct}%)</span>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function updateFilterInfo() {
