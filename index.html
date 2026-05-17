@@ -127,6 +127,17 @@ input, select, textarea {
 .choice.bad { border-color:var(--error);   background:#fef2f2; }
 .choice:disabled { cursor:default; }
 .choice-num { font-weight:700; min-width:20px; flex-shrink:0; }
+.choice-row { display:flex; gap:10px; flex-wrap:wrap; }
+.choice-plain {
+  flex:1; min-width:calc(50% - 5px); padding:16px 8px;
+  background:var(--card); border:2px solid var(--border); border-radius:10px;
+  font-size:24px; font-weight:700; text-align:center; cursor:pointer;
+  transition:border-color .15s, background .15s;
+}
+.choice-plain:hover:not(:disabled) { border-color:var(--primary); background:#eff6ff; }
+.choice-plain.ok  { border-color:var(--success); background:#f0fdf4; }
+.choice-plain.bad { border-color:var(--error);   background:#fef2f2; }
+.choice-plain:disabled { cursor:default; }
 
 /* ── Stats grid ── */
 .stat-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
@@ -682,6 +693,8 @@ input, select, textarea {
       <div id="q-img-note" class="img-note" style="display:none">
         📊 이 문제에는 그림·수식이 포함됩니다. 원본 문제지를 참고하세요.
       </div>
+      <img id="q-full-img" src="" alt="문제 전체"
+           style="display:none;max-width:100%;border-radius:8px;margin-top:4px;border:1px solid var(--border);background:#fff">
     </div>
 
     <!-- Choices -->
@@ -1437,13 +1450,27 @@ function renderQ() {
   // PUA 문자(-) = PDF 특수폰트 인코딩 → 텍스트가 □로 깨짐
   const hasPUA = /[-]/.test(q.question || '');
 
-  // Image: 항상 로드 시도, 파일 없으면 숨김
+  // Full-page image (문제+선지 전체) — 있으면 full mode로 전환
+  A.sess._fullMode = false;
+  const fullImgEl = $('q-full-img');
+  fullImgEl.style.display = 'none';
+  fullImgEl.src = `images/full/${q.uid}.png`;
+  fullImgEl.onload = function() {
+    A.sess._fullMode = true;
+    textEl.style.display = 'none';
+    $('q-img').style.display = 'none';
+    $('q-img-note').style.display = 'none';
+    fullImgEl.style.display = 'block';
+    renderFullModeChoices($('q-choices'));
+  };
+  fullImgEl.onerror = function() { this.style.display = 'none'; };
+
+  // Diagram image: 항상 로드 시도, 파일 없으면 숨김
   const imgEl = $('q-img');
   $('q-img-note').style.display = 'none';
   imgEl.style.display = 'block';
   imgEl.src = `images/${q.uid}.png`;
   imgEl.onload = function() {
-    // PDF 렌더 이미지가 있으면 깨진 텍스트 숨김 (이미지에 올바른 텍스트 포함)
     if (hasPUA) textEl.style.display = 'none';
   };
   imgEl.onerror = function() {
@@ -1485,6 +1512,20 @@ function renderQ() {
   syncChatHeight();
 }
 
+function renderFullModeChoices(ce) {
+  ce.innerHTML = '';
+  const row = document.createElement('div');
+  row.className = 'choice-row';
+  ['①','②','③','④'].forEach((num, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-plain';
+    btn.textContent = num;
+    btn.onclick = () => answer(i + 1);
+    row.appendChild(btn);
+  });
+  ce.appendChild(row);
+}
+
 function answer(ua) {
   const { qs, idx } = A.sess;
   if (A.sess.ans[idx] !== -1) return;
@@ -1512,7 +1553,7 @@ function answer(ua) {
   sbSyncRecord(q, isOk);
 
   // Highlight choices
-  $$('.choice').forEach((btn, i) => {
+  $$('.choice, .choice-plain').forEach((btn, i) => {
     btn.disabled = true;
     if (!unknownAnswer) {
       const cn = i + 1;
