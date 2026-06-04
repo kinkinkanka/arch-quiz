@@ -404,6 +404,38 @@ input, select, textarea { font-size: 16px !important; }
 .explain-box strong { font-weight:700; }
 .explain-box code { background:#e2e8f0; padding:1px 5px; border-radius:3px; font-size:12px; font-family:monospace; }
 
+/* ── Quiz (주관식) ── */
+.qcard { background:var(--card); border-radius:var(--radius); padding:22px; margin-bottom:14px; box-shadow:var(--shadow); }
+.qbadge { display:inline-block; padding:3px 12px; border-radius:20px; font-size:12px; font-weight:700; margin-bottom:10px; }
+.cat-콘크리트{background:#dbeafe;color:#1d4ed8} .cat-거푸집{background:#dcfce7;color:#15803d}
+.cat-철근{background:#fef3c7;color:#b45309} .cat-방수{background:#ede9fe;color:#6d28d9}
+.cat-지반·기초{background:#fce7f3;color:#be185d} .cat-철골{background:#ffedd5;color:#c2410c}
+.cat-공정관리{background:#ecfdf5;color:#065f46} .cat-품질관리{background:#f0f9ff;color:#0369a1}
+.cat-안전관리{background:#fef2f2;color:#b91c1c} .cat-토공사{background:#fef9c3;color:#854d0e}
+.cat-마감공사{background:#f5f3ff;color:#5b21b6} .cat-기타{background:#f1f5f9;color:#475569}
+.q-text { font-size:17px; line-height:1.85; font-weight:500; white-space:pre-wrap; }
+.ans-textarea {
+  width:100%; min-height:140px; padding:14px;
+  border:2px solid var(--border); border-radius:10px;
+  font-size:15px; font-family:inherit; line-height:1.75;
+  resize:vertical; outline:none; transition:border .15s;
+}
+.ans-textarea:focus { border-color:var(--primary); }
+.score-badge { display:inline-block; padding:6px 18px; border-radius:20px; font-size:20px; font-weight:800; }
+.score-great{background:#dcfce7;color:#15803d} .score-ok{background:#fef9c3;color:#854d0e} .score-bad{background:#fef2f2;color:#dc2626}
+.ai-result-box {
+  background:#f8fafc; border-left:4px solid var(--primary);
+  border-radius:0 10px 10px 0; padding:16px; margin-top:12px;
+  font-size:14px; line-height:1.8;
+}
+.ai-result-box h3 { font-size:13px; font-weight:700; color:var(--primary); margin:12px 0 4px; }
+.ai-result-box h3:first-child { margin-top:0; }
+.ai-result-box p{margin:3px 0} .ai-result-box ul{padding-left:18px;margin:4px 0}
+.ai-result-box li{margin-bottom:2px} .ai-result-box strong{font-weight:700}
+.ai-result-box code{background:#e2e8f0;padding:1px 5px;border-radius:3px;font-size:12px;font-family:monospace}
+.q-prog-hdr { background:var(--card); padding:10px 16px; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; }
+.diff-하{color:#16a34a;font-weight:700;font-size:12px} .diff-중{color:#d97706;font-weight:700;font-size:12px} .diff-상{color:#dc2626;font-weight:700;font-size:12px}
+
 /* ── Responsive ── */
 @media (max-width:899px) {
   .chat-sidebar { display:none; }
@@ -490,11 +522,91 @@ input, select, textarea { font-size: 16px !important; }
       <div class="sec">📊 연도별 달성률</div>
       <div id="year-chart"></div>
     </div>
-    <button class="btn btn-primary" onclick="go('browse')">📂 전체 자료 보기</button>
+    <button class="btn btn-primary" onclick="go('qfilter')">✏️ 문제 풀기 (AI 채점)</button>
+    <button class="btn btn-outline" onclick="go('browse')">📂 전체 자료 보기</button>
     <button class="btn btn-outline" id="btn-undone" onclick="browseUndone()">🆕 미학습 자료 보기</button>
     <button class="btn btn-outline" id="btn-review" onclick="browseReview()">🔄 재학습 필요 보기</button>
     <button class="btn btn-ghost" onclick="go('settings')">⚙️ 설정 (OpenAI API 키)</button>
     <button class="btn btn-danger" onclick="clearRecs()">🗑️ 학습 기록 초기화</button>
+  </div>
+</div>
+
+<!-- ════════════════ Q-FILTER ═══ -->
+<div class="screen" id="s-qfilter">
+  <div class="hdr"><button class="hdr-back" onclick="go('home')">‹</button><h1>문제 풀기</h1></div>
+  <div class="wrap">
+    <div class="card"><div class="sec">카테고리</div><div class="chips" id="qcat-chips"></div></div>
+    <div class="card">
+      <div class="sec">난이도</div>
+      <div class="chips" id="qdiff-chips">
+        <div class="chip on" data-v="전체" onclick="pickQDiff(this)">전체</div>
+        <div class="chip" data-v="하" onclick="pickQDiff(this)">하</div>
+        <div class="chip" data-v="중" onclick="pickQDiff(this)">중</div>
+        <div class="chip" data-v="상" onclick="pickQDiff(this)">상</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec">풀이 상태</div>
+      <div class="chips" id="qpool-chips">
+        <div class="chip on" data-v="all"    onclick="pickQPool(this)">전체</div>
+        <div class="chip"    data-v="unseen" onclick="pickQPool(this)">🆕 안 푼 문제</div>
+        <div class="chip"    data-v="low"    onclick="pickQPool(this)">🔄 점수 낮은 문제</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec">문제 수</div>
+      <div class="chips" id="qcnt-chips">
+        <div class="chip"    data-v="5"  onclick="pickQCnt(this)">5문제</div>
+        <div class="chip on" data-v="10" onclick="pickQCnt(this)">10문제</div>
+        <div class="chip"    data-v="20" onclick="pickQCnt(this)">20문제</div>
+        <div class="chip"    data-v="0"  onclick="pickQCnt(this)">전체</div>
+      </div>
+    </div>
+    <p id="qfilter-info" style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:14px"></p>
+    <button class="btn btn-primary" onclick="startQQuiz()">🚀 시작하기</button>
+  </div>
+</div>
+
+<!-- ════════════════ Q-QUIZ ═══ -->
+<div class="screen" id="s-qquiz">
+  <div class="q-prog-hdr">
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="hdr-back" onclick="exitQQuiz()">‹</button>
+      <div style="flex:1">
+        <div class="prog-bar"><div class="prog-fill" id="qq-prog"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:3px">
+          <span id="qq-meta"></span><span style="font-weight:700;color:var(--primary)" id="qq-score"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="qcard">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <span id="qq-badge" class="qbadge"></span>
+        <span id="qq-diff" class="diff-중"></span>
+        <span id="qq-pts" style="font-size:12px;color:var(--muted)"></span>
+      </div>
+      <p id="qq-text" class="q-text"></p>
+    </div>
+    <div class="qcard" id="qq-ans-area">
+      <div class="sec">📝 내 답안 작성</div>
+      <textarea id="qq-ans-input" class="ans-textarea"
+        placeholder="답안을 직접 작성하세요...&#10;&#10;모든 내용을 알지 못해도 괜찮습니다. 아는 만큼 작성하면 AI가 채점해드립니다."></textarea>
+      <button class="btn btn-primary" id="qq-submit-btn" onclick="submitQAnswer()" style="margin-top:12px">🤖 AI 채점 받기</button>
+    </div>
+    <div class="qcard" id="qq-result" style="display:none">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <div style="flex:1">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:4px">AI 채점 결과</div>
+          <span id="qq-score-badge" class="score-badge"></span>
+        </div>
+      </div>
+      <div id="qq-ai-box" class="ai-result-box"></div>
+      <button class="btn btn-outline" id="qq-show-ans-btn" onclick="toggleModelAnswer()" style="margin-top:12px">📖 모범답안 보기</button>
+      <div id="qq-model-ans" style="display:none;margin-top:12px;background:#f0fdf4;border-radius:8px;padding:14px;font-size:14px;line-height:1.8;white-space:pre-wrap;border-left:4px solid var(--primary)"></div>
+      <button class="btn btn-primary" id="qq-next-btn" onclick="nextQQuestion()" style="margin-top:14px">다음 문제 →</button>
+    </div>
   </div>
 </div>
 
@@ -697,6 +809,7 @@ input, select, textarea { font-size: 16px !important; }
 // ══════════════════════════════════════════════════════════
 const A = {
   exams: [],       // all exam metadata
+  questions: [],   // 주관식 문제 DB
   recs: {},        // {examId: {status:'done'|'review'|null, note:'', date:''}}
   key: '',
   model: 'gpt-4o',
@@ -706,6 +819,8 @@ const A = {
   curExam: null,
   chat: [],
   sessions: [],    // [{date, count}] for trend chart
+  qfCat: '전체', qfDiff: '전체', qfPool: 'all', qfCnt: 10,
+  qsess: null,
 };
 
 // ══════════════════════════════════════════════════════════
@@ -827,6 +942,18 @@ async function fetchDB() {
   } catch(e) {
     setLoadMsg('❌ exams.json 로드 실패: ' + e.message);
   }
+  try {
+    const r2 = await fetch('questions.json');
+    if (r2.ok) { const d2 = await r2.json(); A.questions = d2.questions || []; }
+  } catch(e) {}
+}
+
+async function fetchQuestions() {
+  if (A.questions.length) return;
+  try {
+    const r = await fetch('questions.json');
+    if (r.ok) { const d = await r.json(); A.questions = d.questions || []; }
+  } catch(e) {}
 }
 
 function setLoadMsg(m) { const el = $('load-msg'); if (el) el.textContent = m; }
@@ -840,7 +967,8 @@ function go(name) {
   window.scrollTo(0, 0);
   if (name === 'home')   { updateStats(); renderTrendChart(); renderYearChart(); }
   if (name === 'settings') { loadSettingsUI(); }
-  if (name === 'browse') { renderExamList(); }
+  if (name === 'browse')  { renderExamList(); }
+  if (name === 'qfilter') { fetchQuestions().then(() => { buildQCatChips(); updateQFilterInfo(); }); }
   if (name === 'viewer') {
     document.body.classList.add('in-viewer');
     closeChat();
@@ -1399,6 +1527,168 @@ function toast(msg) {
   el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+// ══════════════════════════════════════════════════════════
+// Q-QUIZ (주관식 문제풀기)
+// ══════════════════════════════════════════════════════════
+const QR_KEY = 'sil_q_recs';
+function getQRecs() { try { return JSON.parse(localStorage.getItem(QR_KEY)||'{}'); } catch(e) { return {}; } }
+function saveQRecs(r) { try { localStorage.setItem(QR_KEY, JSON.stringify(r)); } catch(e) {} }
+
+function buildQCatChips() {
+  const cats = ['전체', ...new Set(A.questions.map(q => q.category))];
+  const el = $('qcat-chips'); if (!el) return;
+  el.innerHTML = '';
+  cats.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'chip' + (A.qfCat === c ? ' on' : '');
+    d.textContent = c;
+    d.onclick = () => { $$('#qcat-chips .chip').forEach(x=>x.classList.remove('on')); d.classList.add('on'); A.qfCat=c; updateQFilterInfo(); };
+    el.appendChild(d);
+  });
+}
+function pickQDiff(chip) { $$('#qdiff-chips .chip').forEach(c=>c.classList.remove('on')); chip.classList.add('on'); A.qfDiff=chip.dataset.v; updateQFilterInfo(); }
+function pickQPool(chip) { $$('#qpool-chips .chip').forEach(c=>c.classList.remove('on')); chip.classList.add('on'); A.qfPool=chip.dataset.v; updateQFilterInfo(); }
+function pickQCnt(chip)  { $$('#qcnt-chips .chip').forEach(c=>c.classList.remove('on'));  chip.classList.add('on'); A.qfCnt=parseInt(chip.dataset.v); updateQFilterInfo(); }
+
+function filteredQs() {
+  const recs = getQRecs();
+  return A.questions.filter(q => {
+    const cOk = A.qfCat === '전체' || q.category === A.qfCat;
+    const dOk = A.qfDiff === '전체' || q.difficulty === A.qfDiff;
+    const rec = recs[q.id];
+    let pOk = true;
+    if      (A.qfPool === 'unseen') pOk = !rec;
+    else if (A.qfPool === 'low')    pOk = rec && (rec.score / rec.points) < 0.6;
+    return cOk && dOk && pOk;
+  });
+}
+function updateQFilterInfo() {
+  const el = $('qfilter-info'); if (!el) return;
+  const list = filteredQs();
+  const cnt = A.qfCnt === 0 ? list.length : Math.min(A.qfCnt, list.length);
+  el.textContent = `선택: ${list.length}문제 중 ${cnt}문제 출제 예정`;
+}
+function startQQuiz() {
+  let qs = filteredQs();
+  if (!qs.length) { toast('조건에 맞는 문제가 없습니다.'); return; }
+  for (let i=qs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[qs[i],qs[j]]=[qs[j],qs[i]];}
+  if (A.qfCnt > 0) qs = qs.slice(0, A.qfCnt);
+  A.qsess = { qs, idx:0, scores: new Array(qs.length).fill(null) };
+  go('qquiz'); renderQQuestion();
+}
+function renderQQuestion() {
+  const {qs,idx,scores} = A.qsess;
+  const q = qs[idx];
+  const answered = scores.filter(s=>s!==null).length;
+  const totalScore = scores.reduce((a,s)=>a+(s||0),0);
+  const maxScore = qs.slice(0,answered).reduce((a,q2)=>a+q2.points,0);
+  $('qq-prog').style.width = (idx/qs.length*100)+'%';
+  $('qq-meta').textContent = `${idx+1} / ${qs.length}`;
+  $('qq-score').textContent = answered>0 ? `${totalScore}/${maxScore}점` : '';
+  const badge = $('qq-badge'); badge.textContent = q.category; badge.className = 'qbadge cat-'+q.category;
+  $('qq-diff').textContent = '난이도 '+q.difficulty; $('qq-diff').className = 'diff-'+q.difficulty;
+  $('qq-pts').textContent = q.points+'점';
+  $('qq-text').textContent = q.question;
+  $('qq-ans-input').value = ''; $('qq-ans-input').disabled = false;
+  $('qq-submit-btn').disabled = false; $('qq-submit-btn').textContent = '🤖 AI 채점 받기';
+  $('qq-ans-area').style.display = 'block'; $('qq-result').style.display = 'none';
+  $('qq-model-ans').style.display = 'none'; $('qq-show-ans-btn').textContent = '📖 모범답안 보기';
+  $('qq-next-btn').textContent = idx===qs.length-1 ? '결과 보기 →' : '다음 문제 →';
+  window.scrollTo(0,0);
+}
+async function submitQAnswer() {
+  const {qs,idx} = A.qsess;
+  const q = qs[idx];
+  const userAns = $('qq-ans-input').value.trim();
+  if (!userAns) { toast('답안을 작성해주세요.'); return; }
+  if (!A.key)   { toast('설정에서 OpenAI API 키를 입력해주세요.'); return; }
+  const btn = $('qq-submit-btn');
+  btn.disabled=true; btn.textContent='🔄 AI 채점 중...';
+  $('qq-ans-input').disabled = true;
+  const prompt = `당신은 건축기사 실기 시험 채점관입니다.
+
+[문제 (${q.points}점)]
+${q.question}
+
+[수험자 답안]
+${userAns}
+
+[참고 모범답안]
+${q.answer}
+
+[핵심 키워드]
+${(q.keywords||[]).join(', ')}
+
+다음 형식으로 한국어로 채점해주세요:
+
+## 점수: X/${q.points}점
+(점수 이유 1~2문장)
+
+## 잘 쓴 부분
+(맞게 서술한 내용)
+
+## 보완할 내용
+(빠졌거나 틀린 내용, 없으면 "없음")
+
+## 핵심 포인트
+(반드시 알아야 할 핵심 개념 2~3가지)`;
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+A.key},
+      body:JSON.stringify({model:A.model,messages:[{role:'user',content:prompt}],max_tokens:800,temperature:0.4})
+    });
+    if (!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${res.status}`);}
+    const d = await res.json();
+    const reply = d.choices[0].message.content;
+    const scoreMatch = reply.match(/점수[:\s]*(\d+)\s*\/\s*(\d+)/);
+    const gotScore = scoreMatch ? parseInt(scoreMatch[1]) : Math.ceil(q.points*0.5);
+    A.qsess.scores[idx] = gotScore;
+    const recs = getQRecs();
+    const prev = recs[q.id]||{tries:0};
+    recs[q.id] = {score:gotScore,points:q.points,date:new Date().toISOString(),tries:prev.tries+1};
+    saveQRecs(recs);
+    const rate = gotScore/q.points;
+    const badge = $('qq-score-badge');
+    badge.textContent = `${gotScore} / ${q.points}점`;
+    badge.className = 'score-badge '+(rate>=0.8?'score-great':rate>=0.5?'score-ok':'score-bad');
+    $('qq-ai-box').innerHTML = renderMd(reply);
+    $('qq-model-ans').textContent = q.answer;
+    $('qq-result').style.display='block'; $('qq-ans-area').style.display='none';
+    const ta=A.qsess.scores.filter(s=>s!==null).length;
+    const ts=A.qsess.scores.reduce((a,s)=>a+(s||0),0);
+    const tm=A.qsess.qs.slice(0,ta).reduce((a,q2)=>a+q2.points,0);
+    $('qq-score').textContent=`${ts}/${tm}점`;
+  } catch(e) {
+    btn.disabled=false; btn.textContent='🤖 AI 채점 받기';
+    $('qq-ans-input').disabled=false;
+    toast('오류: '+e.message);
+  }
+}
+function toggleModelAnswer() {
+  const el=$('qq-model-ans'), btn=$('qq-show-ans-btn');
+  if(el.style.display==='none'){el.style.display='block';btn.textContent='📖 모범답안 숨기기';}
+  else{el.style.display='none';btn.textContent='📖 모범답안 보기';}
+}
+function nextQQuestion() {
+  const {qs,idx,scores}=A.qsess;
+  if(idx>=qs.length-1){showQResult();return;}
+  if(scores[idx]===null){if(!confirm('채점 없이 넘어갈까요?'))return;A.qsess.scores[idx]=0;}
+  A.qsess.idx++; renderQQuestion();
+}
+function showQResult() {
+  const {qs,scores}=A.qsess;
+  const ts=scores.reduce((a,s)=>a+(s||0),0);
+  const tm=qs.reduce((a,q)=>a+q.points,0);
+  const rate=tm>0?Math.round(ts/tm*100):0;
+  toast(`🎉 완료! ${ts}/${tm}점 (${rate}%)`);
+  go('home');
+}
+function exitQQuiz() {
+  if(A.qsess&&A.qsess.scores.some(s=>s!==null)){if(!confirm('중단하고 홈으로 돌아갈까요?'))return;}
+  go('home');
 }
 
 // Click sound
