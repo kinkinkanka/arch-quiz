@@ -561,10 +561,7 @@ input, select, textarea { font-size: 16px !important; }
           <div class="pdf-box-name" id="v-pdf-name">-</div>
         </div>
       </div>
-      <button class="btn btn-primary" id="btn-pdf" onclick="openPDF()">📂 PDF 열기</button>
-      <p id="pdf-local-note" style="display:none;font-size:12px;color:var(--muted);margin-top:8px;text-align:center">
-        💡 PDF는 로컬 파일입니다. 이 기기에서 직접 <code style="font-size:11px">실기/Database/</code> 폴더를 열어주세요.
-      </p>
+      <button class="btn btn-primary" onclick="openPDF()">📂 PDF 열기</button>
     </div>
 
     <!-- Notes -->
@@ -1073,10 +1070,6 @@ function openExam(id) {
   $('v-title').textContent = exam.label;
   $('v-pdf-label').textContent = exam.label;
   $('v-pdf-name').textContent  = exam.file;
-  const local = isLocalEnv();
-  $('btn-pdf').textContent = local ? '📂 PDF 열기' : '📂 PDF 열기 (로컬 전용)';
-  $('btn-pdf').style.opacity = local ? '1' : '0.5';
-  $('pdf-local-note').style.display = local ? 'none' : 'block';
   const rec = A.recs[id] || {};
   renderStatusButtons(rec.status || null);
   $('v-notes').value = rec.note || '';
@@ -1134,19 +1127,9 @@ function autoSaveNote() {
   }, 800);
 }
 
-function isLocalEnv() {
-  const h = window.location.hostname;
-  return h === '' || h === 'localhost' || h === '127.0.0.1';
-}
-
 function openPDF() {
   if (!A.curExam) return;
-  if (!isLocalEnv()) {
-    toast('📄 PDF는 로컬 파일이라 이 기기에서 직접 여세요.');
-    return;
-  }
-  const url = '../Database/' + A.curExam.file;
-  window.open(url, '_blank');
+  window.open('pdfs/' + A.curExam.file, '_blank');
 }
 
 // ══════════════════════════════════════════════════════════
