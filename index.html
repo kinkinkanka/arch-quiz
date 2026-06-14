@@ -718,16 +718,10 @@ input, select, textarea { font-size: 16px !important; }
     <button class="hdr-back" onclick="go('home')">‹</button>
     <h1>건축시공 개념 마인드맵</h1>
   </div>
-  <div class="wrap">
-    <div class="mm-controls">
-      <p style="font-size:13px;color:var(--muted)">15개 챕터 · 클릭으로 펼치기/접기</p>
-      <div style="display:flex;gap:6px">
-        <button class="mm-toggle-btn" onclick="mmToggleAll(true)">전체 펼치기</button>
-        <button class="mm-toggle-btn" onclick="mmToggleAll(false)">전체 접기</button>
-      </div>
-    </div>
-    <div id="mm-root"></div>
-  </div>
+  <iframe src="mindmap/index.html"
+    style="flex:1;width:100%;border:none;display:block;"
+    allow="fullscreen">
+  </iframe>
 </div>
 
 <!-- ════════════════ CHATBOT FAB ═══ -->
