@@ -404,37 +404,58 @@ input, select, textarea { font-size: 16px !important; }
 .explain-box strong { font-weight:700; }
 .explain-box code { background:#e2e8f0; padding:1px 5px; border-radius:3px; font-size:12px; font-family:monospace; }
 
-/* ── Quiz (주관식) ── */
-.qcard { background:var(--card); border-radius:var(--radius); padding:22px; margin-bottom:14px; box-shadow:var(--shadow); }
-.qbadge { display:inline-block; padding:3px 12px; border-radius:20px; font-size:12px; font-weight:700; margin-bottom:10px; }
-.cat-콘크리트{background:#dbeafe;color:#1d4ed8} .cat-거푸집{background:#dcfce7;color:#15803d}
-.cat-철근{background:#fef3c7;color:#b45309} .cat-방수{background:#ede9fe;color:#6d28d9}
-.cat-지반·기초{background:#fce7f3;color:#be185d} .cat-철골{background:#ffedd5;color:#c2410c}
-.cat-공정관리{background:#ecfdf5;color:#065f46} .cat-품질관리{background:#f0f9ff;color:#0369a1}
-.cat-안전관리{background:#fef2f2;color:#b91c1c} .cat-토공사{background:#fef9c3;color:#854d0e}
-.cat-마감공사{background:#f5f3ff;color:#5b21b6} .cat-기타{background:#f1f5f9;color:#475569}
-.q-text { font-size:17px; line-height:1.85; font-weight:500; white-space:pre-wrap; }
-.ans-textarea {
-  width:100%; min-height:140px; padding:14px;
-  border:2px solid var(--border); border-radius:10px;
-  font-size:15px; font-family:inherit; line-height:1.75;
-  resize:vertical; outline:none; transition:border .15s;
+/* ── Mindmap Tree ── */
+.mm-chapter {
+  background:var(--card); border-radius:var(--radius);
+  margin-bottom:10px; box-shadow:var(--shadow); overflow:hidden;
 }
-.ans-textarea:focus { border-color:var(--primary); }
-.score-badge { display:inline-block; padding:6px 18px; border-radius:20px; font-size:20px; font-weight:800; }
-.score-great{background:#dcfce7;color:#15803d} .score-ok{background:#fef9c3;color:#854d0e} .score-bad{background:#fef2f2;color:#dc2626}
-.ai-result-box {
-  background:#f8fafc; border-left:4px solid var(--primary);
-  border-radius:0 10px 10px 0; padding:16px; margin-top:12px;
-  font-size:14px; line-height:1.8;
+.mm-chapter-hdr {
+  display:flex; align-items:center; padding:14px 18px;
+  cursor:pointer; gap:10px; user-select:none;
+  border-left:4px solid var(--primary); transition:background .15s;
 }
-.ai-result-box h3 { font-size:13px; font-weight:700; color:var(--primary); margin:12px 0 4px; }
-.ai-result-box h3:first-child { margin-top:0; }
-.ai-result-box p{margin:3px 0} .ai-result-box ul{padding-left:18px;margin:4px 0}
-.ai-result-box li{margin-bottom:2px} .ai-result-box strong{font-weight:700}
-.ai-result-box code{background:#e2e8f0;padding:1px 5px;border-radius:3px;font-size:12px;font-family:monospace}
-.q-prog-hdr { background:var(--card); padding:10px 16px; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; }
-.diff-하{color:#16a34a;font-weight:700;font-size:12px} .diff-중{color:#d97706;font-weight:700;font-size:12px} .diff-상{color:#dc2626;font-weight:700;font-size:12px}
+.mm-chapter-hdr:hover,.mm-chapter-hdr.open { background:#f0fdf4; }
+.mm-chapter-title { flex:1; font-size:15px; font-weight:700; }
+.mm-chapter-arrow { color:var(--muted); font-size:16px; transition:transform .2s; }
+.mm-chapter-hdr.open .mm-chapter-arrow { transform:rotate(90deg); }
+.mm-chapter-body { display:none; padding:12px 16px; border-top:1px solid var(--border); }
+.mm-chapter-body.open { display:block; }
+.mm-sub { margin-bottom:8px; }
+.mm-sub-hdr {
+  display:flex; align-items:center; gap:8px; cursor:pointer;
+  padding:5px 10px; border-radius:8px; font-size:14px; font-weight:600;
+  color:var(--primary); user-select:none; transition:background .15s;
+}
+.mm-sub-hdr:hover { background:#f0fdf4; }
+.mm-sub-arrow { font-size:12px; transition:transform .2s; color:var(--muted); }
+.mm-sub-hdr.open .mm-sub-arrow { transform:rotate(90deg); }
+.mm-sub-body { display:none; padding-left:18px; padding-top:4px; }
+.mm-sub-body.open { display:block; }
+.mm-items { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; }
+.mm-item {
+  padding:4px 12px; background:#f1f5f9; border-radius:20px;
+  font-size:13px; color:var(--text); border:1px solid var(--border);
+}
+.mm-exam-box {
+  margin-top:10px; background:#fffbeb; border:1px solid #fbbf24;
+  border-radius:8px; padding:12px 14px;
+}
+.mm-exam-label { font-size:12px; font-weight:700; color:#b45309; margin-bottom:6px; }
+.mm-exam-items { display:flex; flex-wrap:wrap; gap:6px; }
+.mm-exam-item {
+  padding:3px 10px; background:#fef3c7; border-radius:20px;
+  font-size:12px; color:#92400e;
+}
+.mm-controls {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:14px; flex-wrap:wrap; gap:8px;
+}
+.mm-toggle-btn {
+  padding:6px 12px; background:var(--card); border:1.5px solid var(--border);
+  border-radius:8px; font-size:13px; cursor:pointer; font-weight:600;
+  transition:all .15s; color:var(--text);
+}
+.mm-toggle-btn:hover { background:var(--bg); border-color:var(--primary); color:var(--primary); }
 
 /* ── Responsive ── */
 @media (max-width:899px) {
@@ -522,91 +543,12 @@ input, select, textarea { font-size: 16px !important; }
       <div class="sec">📊 연도별 달성률</div>
       <div id="year-chart"></div>
     </div>
-    <button class="btn btn-primary" onclick="go('qfilter')">✏️ 문제 풀기 (AI 채점)</button>
-    <button class="btn btn-outline" onclick="go('browse')">📂 전체 자료 보기</button>
+    <button class="btn btn-primary" onclick="go('browse')">📂 전체 자료 보기</button>
     <button class="btn btn-outline" id="btn-undone" onclick="browseUndone()">🆕 미학습 자료 보기</button>
     <button class="btn btn-outline" id="btn-review" onclick="browseReview()">🔄 재학습 필요 보기</button>
+    <button class="btn btn-outline" onclick="go('mindmap')">🗺️ 건축시공 개념 마인드맵</button>
     <button class="btn btn-ghost" onclick="go('settings')">⚙️ 설정 (OpenAI API 키)</button>
     <button class="btn btn-danger" onclick="clearRecs()">🗑️ 학습 기록 초기화</button>
-  </div>
-</div>
-
-<!-- ════════════════ Q-FILTER ═══ -->
-<div class="screen" id="s-qfilter">
-  <div class="hdr"><button class="hdr-back" onclick="go('home')">‹</button><h1>문제 풀기</h1></div>
-  <div class="wrap">
-    <div class="card"><div class="sec">카테고리</div><div class="chips" id="qcat-chips"></div></div>
-    <div class="card">
-      <div class="sec">난이도</div>
-      <div class="chips" id="qdiff-chips">
-        <div class="chip on" data-v="전체" onclick="pickQDiff(this)">전체</div>
-        <div class="chip" data-v="하" onclick="pickQDiff(this)">하</div>
-        <div class="chip" data-v="중" onclick="pickQDiff(this)">중</div>
-        <div class="chip" data-v="상" onclick="pickQDiff(this)">상</div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="sec">풀이 상태</div>
-      <div class="chips" id="qpool-chips">
-        <div class="chip on" data-v="all"    onclick="pickQPool(this)">전체</div>
-        <div class="chip"    data-v="unseen" onclick="pickQPool(this)">🆕 안 푼 문제</div>
-        <div class="chip"    data-v="low"    onclick="pickQPool(this)">🔄 점수 낮은 문제</div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="sec">문제 수</div>
-      <div class="chips" id="qcnt-chips">
-        <div class="chip"    data-v="5"  onclick="pickQCnt(this)">5문제</div>
-        <div class="chip on" data-v="10" onclick="pickQCnt(this)">10문제</div>
-        <div class="chip"    data-v="20" onclick="pickQCnt(this)">20문제</div>
-        <div class="chip"    data-v="0"  onclick="pickQCnt(this)">전체</div>
-      </div>
-    </div>
-    <p id="qfilter-info" style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:14px"></p>
-    <button class="btn btn-primary" onclick="startQQuiz()">🚀 시작하기</button>
-  </div>
-</div>
-
-<!-- ════════════════ Q-QUIZ ═══ -->
-<div class="screen" id="s-qquiz">
-  <div class="q-prog-hdr">
-    <div style="display:flex;align-items:center;gap:8px">
-      <button class="hdr-back" onclick="exitQQuiz()">‹</button>
-      <div style="flex:1">
-        <div class="prog-bar"><div class="prog-fill" id="qq-prog"></div></div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:3px">
-          <span id="qq-meta"></span><span style="font-weight:700;color:var(--primary)" id="qq-score"></span>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="wrap">
-    <div class="qcard">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-        <span id="qq-badge" class="qbadge"></span>
-        <span id="qq-diff" class="diff-중"></span>
-        <span id="qq-pts" style="font-size:12px;color:var(--muted)"></span>
-      </div>
-      <p id="qq-text" class="q-text"></p>
-    </div>
-    <div class="qcard" id="qq-ans-area">
-      <div class="sec">📝 내 답안 작성</div>
-      <textarea id="qq-ans-input" class="ans-textarea"
-        placeholder="답안을 직접 작성하세요...&#10;&#10;모든 내용을 알지 못해도 괜찮습니다. 아는 만큼 작성하면 AI가 채점해드립니다."></textarea>
-      <button class="btn btn-primary" id="qq-submit-btn" onclick="submitQAnswer()" style="margin-top:12px">🤖 AI 채점 받기</button>
-    </div>
-    <div class="qcard" id="qq-result" style="display:none">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-        <div style="flex:1">
-          <div style="font-size:13px;color:var(--muted);margin-bottom:4px">AI 채점 결과</div>
-          <span id="qq-score-badge" class="score-badge"></span>
-        </div>
-      </div>
-      <div id="qq-ai-box" class="ai-result-box"></div>
-      <button class="btn btn-outline" id="qq-show-ans-btn" onclick="toggleModelAnswer()" style="margin-top:12px">📖 모범답안 보기</button>
-      <div id="qq-model-ans" style="display:none;margin-top:12px;background:#f0fdf4;border-radius:8px;padding:14px;font-size:14px;line-height:1.8;white-space:pre-wrap;border-left:4px solid var(--primary)"></div>
-      <button class="btn btn-primary" id="qq-next-btn" onclick="nextQQuestion()" style="margin-top:14px">다음 문제 →</button>
-    </div>
   </div>
 </div>
 
@@ -770,6 +712,24 @@ input, select, textarea { font-size: 16px !important; }
   </div>
 </div>
 
+<!-- ════════════════ MINDMAP ═══ -->
+<div class="screen" id="s-mindmap">
+  <div class="hdr">
+    <button class="hdr-back" onclick="go('home')">‹</button>
+    <h1>건축시공 개념 마인드맵</h1>
+  </div>
+  <div class="wrap">
+    <div class="mm-controls">
+      <p style="font-size:13px;color:var(--muted)">15개 챕터 · 클릭으로 펼치기/접기</p>
+      <div style="display:flex;gap:6px">
+        <button class="mm-toggle-btn" onclick="mmToggleAll(true)">전체 펼치기</button>
+        <button class="mm-toggle-btn" onclick="mmToggleAll(false)">전체 접기</button>
+      </div>
+    </div>
+    <div id="mm-root"></div>
+  </div>
+</div>
+
 <!-- ════════════════ CHATBOT FAB ═══ -->
 <button id="chat-fab" onclick="toggleChat()" title="AI 챗봇">💬</button>
 
@@ -809,7 +769,6 @@ input, select, textarea { font-size: 16px !important; }
 // ══════════════════════════════════════════════════════════
 const A = {
   exams: [],       // all exam metadata
-  questions: [],   // 주관식 문제 DB
   recs: {},        // {examId: {status:'done'|'review'|null, note:'', date:''}}
   key: '',
   model: 'gpt-4o',
@@ -819,8 +778,6 @@ const A = {
   curExam: null,
   chat: [],
   sessions: [],    // [{date, count}] for trend chart
-  qfCat: '전체', qfDiff: '전체', qfPool: 'all', qfCnt: 10,
-  qsess: null,
 };
 
 // ══════════════════════════════════════════════════════════
@@ -942,18 +899,6 @@ async function fetchDB() {
   } catch(e) {
     setLoadMsg('❌ exams.json 로드 실패: ' + e.message);
   }
-  try {
-    const r2 = await fetch('questions.json');
-    if (r2.ok) { const d2 = await r2.json(); A.questions = d2.questions || []; }
-  } catch(e) {}
-}
-
-async function fetchQuestions() {
-  if (A.questions.length) return;
-  try {
-    const r = await fetch('questions.json');
-    if (r.ok) { const d = await r.json(); A.questions = d.questions || []; }
-  } catch(e) {}
 }
 
 function setLoadMsg(m) { const el = $('load-msg'); if (el) el.textContent = m; }
@@ -967,8 +912,8 @@ function go(name) {
   window.scrollTo(0, 0);
   if (name === 'home')   { updateStats(); renderTrendChart(); renderYearChart(); }
   if (name === 'settings') { loadSettingsUI(); }
-  if (name === 'browse')  { renderExamList(); }
-  if (name === 'qfilter') { fetchQuestions().then(() => { buildQCatChips(); updateQFilterInfo(); }); }
+  if (name === 'browse') { renderExamList(); }
+  if (name === 'mindmap') { initMindmap(); }
   if (name === 'viewer') {
     document.body.classList.add('in-viewer');
     closeChat();
@@ -1529,168 +1474,6 @@ function toast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
 }
 
-// ══════════════════════════════════════════════════════════
-// Q-QUIZ (주관식 문제풀기)
-// ══════════════════════════════════════════════════════════
-const QR_KEY = 'sil_q_recs';
-function getQRecs() { try { return JSON.parse(localStorage.getItem(QR_KEY)||'{}'); } catch(e) { return {}; } }
-function saveQRecs(r) { try { localStorage.setItem(QR_KEY, JSON.stringify(r)); } catch(e) {} }
-
-function buildQCatChips() {
-  const cats = ['전체', ...new Set(A.questions.map(q => q.category))];
-  const el = $('qcat-chips'); if (!el) return;
-  el.innerHTML = '';
-  cats.forEach(c => {
-    const d = document.createElement('div');
-    d.className = 'chip' + (A.qfCat === c ? ' on' : '');
-    d.textContent = c;
-    d.onclick = () => { $$('#qcat-chips .chip').forEach(x=>x.classList.remove('on')); d.classList.add('on'); A.qfCat=c; updateQFilterInfo(); };
-    el.appendChild(d);
-  });
-}
-function pickQDiff(chip) { $$('#qdiff-chips .chip').forEach(c=>c.classList.remove('on')); chip.classList.add('on'); A.qfDiff=chip.dataset.v; updateQFilterInfo(); }
-function pickQPool(chip) { $$('#qpool-chips .chip').forEach(c=>c.classList.remove('on')); chip.classList.add('on'); A.qfPool=chip.dataset.v; updateQFilterInfo(); }
-function pickQCnt(chip)  { $$('#qcnt-chips .chip').forEach(c=>c.classList.remove('on'));  chip.classList.add('on'); A.qfCnt=parseInt(chip.dataset.v); updateQFilterInfo(); }
-
-function filteredQs() {
-  const recs = getQRecs();
-  return A.questions.filter(q => {
-    const cOk = A.qfCat === '전체' || q.category === A.qfCat;
-    const dOk = A.qfDiff === '전체' || q.difficulty === A.qfDiff;
-    const rec = recs[q.id];
-    let pOk = true;
-    if      (A.qfPool === 'unseen') pOk = !rec;
-    else if (A.qfPool === 'low')    pOk = rec && (rec.score / rec.points) < 0.6;
-    return cOk && dOk && pOk;
-  });
-}
-function updateQFilterInfo() {
-  const el = $('qfilter-info'); if (!el) return;
-  const list = filteredQs();
-  const cnt = A.qfCnt === 0 ? list.length : Math.min(A.qfCnt, list.length);
-  el.textContent = `선택: ${list.length}문제 중 ${cnt}문제 출제 예정`;
-}
-function startQQuiz() {
-  let qs = filteredQs();
-  if (!qs.length) { toast('조건에 맞는 문제가 없습니다.'); return; }
-  for (let i=qs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[qs[i],qs[j]]=[qs[j],qs[i]];}
-  if (A.qfCnt > 0) qs = qs.slice(0, A.qfCnt);
-  A.qsess = { qs, idx:0, scores: new Array(qs.length).fill(null) };
-  go('qquiz'); renderQQuestion();
-}
-function renderQQuestion() {
-  const {qs,idx,scores} = A.qsess;
-  const q = qs[idx];
-  const answered = scores.filter(s=>s!==null).length;
-  const totalScore = scores.reduce((a,s)=>a+(s||0),0);
-  const maxScore = qs.slice(0,answered).reduce((a,q2)=>a+q2.points,0);
-  $('qq-prog').style.width = (idx/qs.length*100)+'%';
-  $('qq-meta').textContent = `${idx+1} / ${qs.length}`;
-  $('qq-score').textContent = answered>0 ? `${totalScore}/${maxScore}점` : '';
-  const badge = $('qq-badge'); badge.textContent = q.category; badge.className = 'qbadge cat-'+q.category;
-  $('qq-diff').textContent = '난이도 '+q.difficulty; $('qq-diff').className = 'diff-'+q.difficulty;
-  $('qq-pts').textContent = q.points+'점';
-  $('qq-text').textContent = q.question;
-  $('qq-ans-input').value = ''; $('qq-ans-input').disabled = false;
-  $('qq-submit-btn').disabled = false; $('qq-submit-btn').textContent = '🤖 AI 채점 받기';
-  $('qq-ans-area').style.display = 'block'; $('qq-result').style.display = 'none';
-  $('qq-model-ans').style.display = 'none'; $('qq-show-ans-btn').textContent = '📖 모범답안 보기';
-  $('qq-next-btn').textContent = idx===qs.length-1 ? '결과 보기 →' : '다음 문제 →';
-  window.scrollTo(0,0);
-}
-async function submitQAnswer() {
-  const {qs,idx} = A.qsess;
-  const q = qs[idx];
-  const userAns = $('qq-ans-input').value.trim();
-  if (!userAns) { toast('답안을 작성해주세요.'); return; }
-  if (!A.key)   { toast('설정에서 OpenAI API 키를 입력해주세요.'); return; }
-  const btn = $('qq-submit-btn');
-  btn.disabled=true; btn.textContent='🔄 AI 채점 중...';
-  $('qq-ans-input').disabled = true;
-  const prompt = `당신은 건축기사 실기 시험 채점관입니다.
-
-[문제 (${q.points}점)]
-${q.question}
-
-[수험자 답안]
-${userAns}
-
-[참고 모범답안]
-${q.answer}
-
-[핵심 키워드]
-${(q.keywords||[]).join(', ')}
-
-다음 형식으로 한국어로 채점해주세요:
-
-## 점수: X/${q.points}점
-(점수 이유 1~2문장)
-
-## 잘 쓴 부분
-(맞게 서술한 내용)
-
-## 보완할 내용
-(빠졌거나 틀린 내용, 없으면 "없음")
-
-## 핵심 포인트
-(반드시 알아야 할 핵심 개념 2~3가지)`;
-  try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+A.key},
-      body:JSON.stringify({model:A.model,messages:[{role:'user',content:prompt}],max_tokens:800,temperature:0.4})
-    });
-    if (!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${res.status}`);}
-    const d = await res.json();
-    const reply = d.choices[0].message.content;
-    const scoreMatch = reply.match(/점수[:\s]*(\d+)\s*\/\s*(\d+)/);
-    const gotScore = scoreMatch ? parseInt(scoreMatch[1]) : Math.ceil(q.points*0.5);
-    A.qsess.scores[idx] = gotScore;
-    const recs = getQRecs();
-    const prev = recs[q.id]||{tries:0};
-    recs[q.id] = {score:gotScore,points:q.points,date:new Date().toISOString(),tries:prev.tries+1};
-    saveQRecs(recs);
-    const rate = gotScore/q.points;
-    const badge = $('qq-score-badge');
-    badge.textContent = `${gotScore} / ${q.points}점`;
-    badge.className = 'score-badge '+(rate>=0.8?'score-great':rate>=0.5?'score-ok':'score-bad');
-    $('qq-ai-box').innerHTML = renderMd(reply);
-    $('qq-model-ans').textContent = q.answer;
-    $('qq-result').style.display='block'; $('qq-ans-area').style.display='none';
-    const ta=A.qsess.scores.filter(s=>s!==null).length;
-    const ts=A.qsess.scores.reduce((a,s)=>a+(s||0),0);
-    const tm=A.qsess.qs.slice(0,ta).reduce((a,q2)=>a+q2.points,0);
-    $('qq-score').textContent=`${ts}/${tm}점`;
-  } catch(e) {
-    btn.disabled=false; btn.textContent='🤖 AI 채점 받기';
-    $('qq-ans-input').disabled=false;
-    toast('오류: '+e.message);
-  }
-}
-function toggleModelAnswer() {
-  const el=$('qq-model-ans'), btn=$('qq-show-ans-btn');
-  if(el.style.display==='none'){el.style.display='block';btn.textContent='📖 모범답안 숨기기';}
-  else{el.style.display='none';btn.textContent='📖 모범답안 보기';}
-}
-function nextQQuestion() {
-  const {qs,idx,scores}=A.qsess;
-  if(idx>=qs.length-1){showQResult();return;}
-  if(scores[idx]===null){if(!confirm('채점 없이 넘어갈까요?'))return;A.qsess.scores[idx]=0;}
-  A.qsess.idx++; renderQQuestion();
-}
-function showQResult() {
-  const {qs,scores}=A.qsess;
-  const ts=scores.reduce((a,s)=>a+(s||0),0);
-  const tm=qs.reduce((a,q)=>a+q.points,0);
-  const rate=tm>0?Math.round(ts/tm*100):0;
-  toast(`🎉 완료! ${ts}/${tm}점 (${rate}%)`);
-  go('home');
-}
-function exitQQuiz() {
-  if(A.qsess&&A.qsess.scores.some(s=>s!==null)){if(!confirm('중단하고 홈으로 돌아갈까요?'))return;}
-  go('home');
-}
-
 // Click sound
 const SFX = {
   _c: null,
@@ -1715,6 +1498,349 @@ document.addEventListener('click', e => {
 document.addEventListener('touchstart', () => {
   if (SFX._c && SFX._c.state === 'suspended') SFX._c.resume().catch(() => {});
 }, { passive: true });
+
+// ══════════════════════════════════════════════════════════
+// MINDMAP DATA
+// ══════════════════════════════════════════════════════════
+const MINDMAP_DATA = {
+  id: 'root', label: '건축시공',
+  children: [
+    { id:'1', label:'1. 가설공사', children:[
+      { id:'1-1', label:'규준틀' },
+      { id:'1-2', label:'비계', children:[
+        { id:'1-2-1', label:'강관비계' }, { id:'1-2-2', label:'달비계' },
+        { id:'1-2-3', label:'말비계' },   { id:'1-2-4', label:'통나무비계' },
+      ]},
+      { id:'1-3', label:'가설시설 (울타리·창고·사무소)' },
+      { id:'1-exam', label:'[시험 포인트]', children:[
+        { id:'1-e1', label:'비계: 강관·달·말·통나무' },
+        { id:'1-e2', label:'규준틀의 역할과 설치' },
+        { id:'1-e3', label:'흙의 성질: 함수비·간극비·포화도' },
+        { id:'1-e4', label:'지반조사: 보링·SPT·베인시험' },
+      ]},
+    ]},
+    { id:'2', label:'2. 토공사', children:[
+      { id:'2-1', label:'터파기', children:[
+        { id:'2-1-1', label:'줄파기' }, { id:'2-1-2', label:'온통파기' }, { id:'2-1-3', label:'독립파기' },
+      ]},
+      { id:'2-2', label:'흙막이공사', children:[
+        { id:'2-2-1', label:'H-Pile + 흙막이판' }, { id:'2-2-2', label:'시트파일' },
+        { id:'2-2-3', label:'슬러리월' }, { id:'2-2-4', label:'어스앵커' },
+      ]},
+      { id:'2-3', label:'지반개량', children:[
+        { id:'2-3-1', label:'웰포인트' }, { id:'2-3-2', label:'딥웰' },
+        { id:'2-3-3', label:'샌드드레인' }, { id:'2-3-4', label:'페이퍼드레인' },
+      ]},
+      { id:'2-4', label:'토량계산', children:[
+        { id:'2-4-1', label:'토량변화율 (L, C)' }, { id:'2-4-2', label:'흐트러진 토량' }, { id:'2-4-3', label:'다진 토량' },
+      ]},
+      { id:'2-exam', label:'[시험 포인트]', children:[
+        { id:'2-e1', label:'터파기: 줄·온통·독립파기' },
+        { id:'2-e2', label:'흙막이: H-Pile·시트·슬러리월·앵커' },
+        { id:'2-e3', label:'지반개량: 웰포·딥웰·샌드드레인' },
+        { id:'2-e4', label:'토량변화율 (L·C)' },
+      ]},
+    ]},
+    { id:'3', label:'3. 기초공사', children:[
+      { id:'3-1', label:'직접기초', children:[
+        { id:'3-1-1', label:'독립기초' }, { id:'3-1-2', label:'줄기초' },
+        { id:'3-1-3', label:'복합기초' }, { id:'3-1-4', label:'온통기초 (매트기초)' },
+      ]},
+      { id:'3-2', label:'말뚝기초', children:[
+        { id:'3-2-1', label:'나무말뚝' }, { id:'3-2-2', label:'RC말뚝' },
+        { id:'3-2-3', label:'PC말뚝' }, { id:'3-2-4', label:'PHC말뚝' },
+        { id:'3-2-5', label:'강관말뚝' }, { id:'3-2-6', label:'H형강말뚝' },
+      ]},
+      { id:'3-3', label:'말뚝 시공법', children:[
+        { id:'3-3-1', label:'항타공법' }, { id:'3-3-2', label:'프리보링공법' }, { id:'3-3-3', label:'중굴공법' },
+      ]},
+      { id:'3-4', label:'케이슨기초', children:[
+        { id:'3-4-1', label:'오픈케이슨' }, { id:'3-4-2', label:'공기케이슨' }, { id:'3-4-3', label:'박스케이슨' },
+      ]},
+      { id:'3-exam', label:'[시험 포인트]', children:[
+        { id:'3-e1', label:'직접기초: 독립·줄·복합·온통기초' },
+        { id:'3-e2', label:'말뚝: 나무·RC·PC·PHC·강관·H형강' },
+        { id:'3-e3', label:'시공법: 항타·프리보링·중굴공법' },
+        { id:'3-e4', label:'케이슨: 오픈·공기·박스' },
+      ]},
+    ]},
+    { id:'4', label:'4. 철근콘크리트공사', children:[
+      { id:'4-1', label:'거푸집', children:[
+        { id:'4-1-1', label:'재래식 거푸집' }, { id:'4-1-2', label:'갱폼 (Gang Form)' },
+        { id:'4-1-3', label:'슬립폼 (Slip Form)' }, { id:'4-1-4', label:'터널폼 (Tunnel Form)' },
+        { id:'4-1-5', label:'플라잉폼 (Flying Form)' }, { id:'4-1-6', label:'알폼 (Al Form)' },
+      ]},
+      { id:'4-2', label:'철근공사', children:[
+        { id:'4-2-1', label:'철근의 종류 (SR, HD)' }, { id:'4-2-2', label:'피복두께' },
+        { id:'4-2-3', label:'이음 (겹침·기계적·용접)' }, { id:'4-2-4', label:'정착길이' }, { id:'4-2-5', label:'갈고리 (Hook)' },
+      ]},
+      { id:'4-3', label:'콘크리트 재료', children:[
+        { id:'4-3-1', label:'시멘트 종류' }, { id:'4-3-2', label:'골재 (잔골재·굵은골재)' },
+        { id:'4-3-3', label:'혼화재료 (혼화재·혼화제)' },
+      ]},
+      { id:'4-4', label:'콘크리트 배합', children:[
+        { id:'4-4-1', label:'물-시멘트비 (W/C)' }, { id:'4-4-2', label:'슬럼프 (Slump)' },
+        { id:'4-4-3', label:'공기량' }, { id:'4-4-4', label:'배합강도' },
+      ]},
+      { id:'4-5', label:'콘크리트 시공', children:[
+        { id:'4-5-1', label:'비비기 (믹싱)' }, { id:'4-5-2', label:'운반' },
+        { id:'4-5-3', label:'타설·다짐' }, { id:'4-5-4', label:'양생 (습윤·증기)' },
+      ]},
+      { id:'4-6', label:'특수 콘크리트', children:[
+        { id:'4-6-1', label:'한중콘크리트' }, { id:'4-6-2', label:'서중콘크리트' },
+        { id:'4-6-3', label:'수중콘크리트' }, { id:'4-6-4', label:'매스콘크리트' },
+        { id:'4-6-5', label:'경량콘크리트' }, { id:'4-6-6', label:'프리팩트콘크리트' }, { id:'4-6-7', label:'PSC (프리스트레스트)' },
+      ]},
+      { id:'4-exam', label:'[시험 포인트]', children:[
+        { id:'4-e1', label:'거푸집: 갱폼·슬립·터널·플라잉·알폼' },
+        { id:'4-e2', label:'철근: SR·HD, 피복두께, 이음, 정착' },
+        { id:'4-e3', label:'혼화재(플라이애시) vs 혼화제(AE제)' },
+        { id:'4-e4', label:'W/C·슬럼프·공기량·배합강도' },
+        { id:'4-e5', label:'타설·다짐·양생(습윤·증기)' },
+        { id:'4-e6', label:'특수콘크리트: 한중·서중·수중·매스' },
+      ]},
+    ]},
+    { id:'5', label:'5. 철골공사', children:[
+      { id:'5-1', label:'부재 종류', children:[
+        { id:'5-1-1', label:'H형강' }, { id:'5-1-2', label:'I형강' },
+        { id:'5-1-3', label:'ㄱ형강 (앵글)' }, { id:'5-1-4', label:'ㄷ형강 (채널)' },
+      ]},
+      { id:'5-2', label:'접합', children:[
+        { id:'5-2-1', label:'용접접합', children:[
+          { id:'5-2-1-1', label:'맞댐용접' }, { id:'5-2-1-2', label:'필릿용접' },
+        ]},
+        { id:'5-2-2', label:'볼트접합', children:[
+          { id:'5-2-2-1', label:'고력볼트' }, { id:'5-2-2-2', label:'일반볼트 (앙카볼트)' },
+        ]},
+      ]},
+      { id:'5-3', label:'내화피복', children:[
+        { id:'5-3-1', label:'뿜칠공법' }, { id:'5-3-2', label:'타설공법' }, { id:'5-3-3', label:'붙이기공법' },
+      ]},
+      { id:'5-exam', label:'[시험 포인트]', children:[
+        { id:'5-e1', label:'부재: H·I·ㄱ(앵글)·ㄷ(채널)형강' },
+        { id:'5-e2', label:'용접: 맞댐용접·필릿용접' },
+        { id:'5-e3', label:'볼트: 고력볼트·일반볼트' },
+        { id:'5-e4', label:'내화피복: 뿜칠·타설·붙이기' },
+        { id:'5-e5', label:'철골세우기 순서' },
+      ]},
+    ]},
+    { id:'6', label:'6. 조적공사', children:[
+      { id:'6-1', label:'벽돌쌓기', children:[
+        { id:'6-1-1', label:'길이쌓기' }, { id:'6-1-2', label:'마구리쌓기' },
+        { id:'6-1-3', label:'영국식쌓기' }, { id:'6-1-4', label:'화란식쌓기' },
+        { id:'6-1-5', label:'미국식쌓기' }, { id:'6-1-6', label:'불식쌓기' },
+      ]},
+      { id:'6-2', label:'블록쌓기' },
+      { id:'6-3', label:'돌쌓기', children:[
+        { id:'6-3-1', label:'찰쌓기' }, { id:'6-3-2', label:'메쌓기' },
+      ]},
+      { id:'6-exam', label:'[시험 포인트]', children:[
+        { id:'6-e1', label:'쌓기: 길이·마구리·영국·화란·미국·불식' },
+        { id:'6-e2', label:'블록쌓기 방법' },
+        { id:'6-e3', label:'찰쌓기(모르타르) vs 메쌓기(건식)' },
+      ]},
+    ]},
+    { id:'7', label:'7. 방수공사', children:[
+      { id:'7-1', label:'아스팔트 방수' }, { id:'7-2', label:'시트 방수' },
+      { id:'7-3', label:'도막 방수' }, { id:'7-4', label:'시멘트 액체 방수' },
+      { id:'7-5', label:'규산질 방수' }, { id:'7-6', label:'실링 (Sealing) 방수' },
+      { id:'7-exam', label:'[시험 포인트]', children:[
+        { id:'7-e1', label:'방수공법: 아스팔트·시트·도막·액체·규산질·실링' },
+        { id:'7-e2', label:'아스팔트 방수 공법 순서' },
+      ]},
+    ]},
+    { id:'8', label:'8. 미장·타일공사', children:[
+      { id:'8-1', label:'미장공사', children:[
+        { id:'8-1-1', label:'시멘트 모르타르' }, { id:'8-1-2', label:'석고 플라스터' }, { id:'8-1-3', label:'테라조' },
+      ]},
+      { id:'8-2', label:'타일공사', children:[
+        { id:'8-2-1', label:'압착붙이기' }, { id:'8-2-2', label:'개량압착붙이기' },
+        { id:'8-2-3', label:'떠붙이기' }, { id:'8-2-4', label:'접착붙이기' },
+      ]},
+      { id:'8-exam', label:'[시험 포인트]', children:[
+        { id:'8-e1', label:'미장: 시멘트모르타르·석고플라스터·테라조' },
+        { id:'8-e2', label:'타일: 압착·개량압착·떠붙이기·접착' },
+      ]},
+    ]},
+    { id:'9', label:'9. 창호·유리공사', children:[
+      { id:'9-1', label:'창호공사', children:[
+        { id:'9-1-1', label:'알루미늄창호' }, { id:'9-1-2', label:'PVC창호' },
+        { id:'9-1-3', label:'목재창호' }, { id:'9-1-4', label:'스틸창호' },
+      ]},
+      { id:'9-2', label:'유리공사', children:[
+        { id:'9-2-1', label:'판유리' }, { id:'9-2-2', label:'복층유리' },
+        { id:'9-2-3', label:'강화유리' }, { id:'9-2-4', label:'접합유리' }, { id:'9-2-5', label:'로이유리' },
+      ]},
+      { id:'9-exam', label:'[시험 포인트]', children:[
+        { id:'9-e1', label:'창호: 알루미늄·PVC·목재·스틸' },
+        { id:'9-e2', label:'유리: 판·복층·강화·접합·로이' },
+      ]},
+    ]},
+    { id:'10', label:'10. 도장공사', children:[
+      { id:'10-1', label:'바탕처리' },
+      { id:'10-2', label:'도료 종류', children:[
+        { id:'10-2-1', label:'유성페인트' }, { id:'10-2-2', label:'수성페인트' },
+        { id:'10-2-3', label:'에폭시' }, { id:'10-2-4', label:'우레탄' }, { id:'10-2-5', label:'락카' },
+      ]},
+      { id:'10-exam', label:'[시험 포인트]', children:[
+        { id:'10-e1', label:'도료: 유성·수성·에폭시·우레탄·락카' },
+        { id:'10-e2', label:'바탕처리 순서' },
+      ]},
+    ]},
+    { id:'11', label:'11. 수장공사', children:[
+      { id:'11-1', label:'바닥', children:[
+        { id:'11-1-1', label:'비닐타일' }, { id:'11-1-2', label:'카펫' },
+        { id:'11-1-3', label:'목재마루 (원목·강마루·강화마루)' },
+      ]},
+      { id:'11-2', label:'천장', children:[
+        { id:'11-2-1', label:'석고보드' }, { id:'11-2-2', label:'텍스' },
+      ]},
+      { id:'11-3', label:'벽', children:[
+        { id:'11-3-1', label:'벽지' }, { id:'11-3-2', label:'합판' },
+      ]},
+    ]},
+    { id:'12', label:'12. 지붕·커튼월공사', children:[
+      { id:'12-1', label:'지붕공사', children:[
+        { id:'12-1-1', label:'기와지붕' }, { id:'12-1-2', label:'금속지붕' }, { id:'12-1-3', label:'아스팔트싱글' },
+      ]},
+      { id:'12-2', label:'커튼월공사', children:[
+        { id:'12-2-1', label:'멀리언방식' }, { id:'12-2-2', label:'스팬드럴방식' },
+      ]},
+      { id:'12-exam', label:'[시험 포인트]', children:[
+        { id:'12-e1', label:'지붕: 기와·금속·아스팔트싱글' },
+        { id:'12-e2', label:'커튼월: 멀리언방식·스팬드럴방식' },
+      ]},
+    ]},
+    { id:'13', label:'13. 공사관리', children:[
+      { id:'13-1', label:'공정관리', children:[
+        { id:'13-1-1', label:'바차트 (Bar Chart)' },
+        { id:'13-1-2', label:'네트워크공정표', children:[
+          { id:'13-1-2-1', label:'CPM (주공정선)' }, { id:'13-1-2-2', label:'PERT' },
+        ]},
+        { id:'13-1-3', label:'공기단축' },
+      ]},
+      { id:'13-2', label:'품질관리', children:[
+        { id:'13-2-1', label:'관리도 (X-R 관리도)' },
+        { id:'13-2-2', label:'비파괴검사', children:[
+          { id:'13-2-2-1', label:'방사선검사 (RT)' }, { id:'13-2-2-2', label:'초음파검사 (UT)' },
+          { id:'13-2-2-3', label:'자분탐상검사 (MT)' }, { id:'13-2-2-4', label:'침투탐상검사 (PT)' },
+        ]},
+        { id:'13-2-3', label:'콘크리트 시험 (슬럼프·공기량·압축강도)' },
+      ]},
+      { id:'13-3', label:'안전관리' },
+      { id:'13-exam', label:'[시험 포인트]', children:[
+        { id:'13-e1', label:'3대 관리: 원가·공정·품질' },
+        { id:'13-e2', label:'5대 관리: +안전·환경' },
+        { id:'13-e3', label:'노무자: 직용·정용·날품' },
+        { id:'13-e4', label:'도급: 일식·분할·공동도급·턴키' },
+        { id:'13-e5', label:'VE(가치공학) 특징' },
+        { id:'13-e6', label:'EC화·CIC·CALS·PMIS' },
+        { id:'13-e7', label:'CPM·PERT — 플로트·주공정선' },
+        { id:'13-e8', label:'품질도구: X-R관리도·파레토·히스토그램' },
+      ]},
+    ]},
+    { id:'14', label:'14. 목공사', children:[
+      { id:'14-1', label:'목재의 결점', children:[
+        { id:'14-1-1', label:'옹이' }, { id:'14-1-2', label:'갈라짐' },
+        { id:'14-1-3', label:'껍질박이' }, { id:'14-1-4', label:'썩음' },
+      ]},
+      { id:'14-2', label:'함수율·섬유포화점 (28~30%)' },
+      { id:'14-3', label:'이음과 맞춤', children:[
+        { id:'14-3-1', label:'장부이음' }, { id:'14-3-2', label:'반턱이음' }, { id:'14-3-3', label:'주먹장이음' },
+      ]},
+      { id:'14-4', label:'방부·방충 처리법' },
+      { id:'14-exam', label:'[시험 포인트]', children:[
+        { id:'14-e1', label:'결점: 옹이·갈라짐·껍질박이·썩음' },
+        { id:'14-e2', label:'섬유포화점 28~30%' },
+        { id:'14-e3', label:'이음과 맞춤 종류' },
+        { id:'14-e4', label:'방부·방충 처리법' },
+      ]},
+    ]},
+    { id:'15', label:'15. 건축적산', children:[
+      { id:'15-1', label:'수량산출 원칙' },
+      { id:'15-2', label:'공종별 적산', children:[
+        { id:'15-2-1', label:'콘크리트 적산' }, { id:'15-2-2', label:'철근 적산' },
+        { id:'15-2-3', label:'거푸집 적산' }, { id:'15-2-4', label:'조적 적산' },
+      ]},
+      { id:'15-exam', label:'[시험 포인트]', children:[
+        { id:'15-e1', label:'적산총칙: 수량산출 원칙' },
+        { id:'15-e2', label:'공종별: 콘크리트·철근·거푸집·조적' },
+      ]},
+    ]},
+  ]
+};
+
+// ── Mindmap render functions ──
+function initMindmap() {
+  const root = document.getElementById('mm-root');
+  if (!root || root.dataset.built) return;
+  root.dataset.built = '1';
+  root.innerHTML = MINDMAP_DATA.children.map(renderMmChapter).join('');
+}
+
+function renderMmChapter(ch) {
+  const examNode = ch.children.find(c => c.label === '[시험 포인트]');
+  const regular  = ch.children.filter(c => c.label !== '[시험 포인트]');
+  const body = renderMmBody(regular) + (examNode ? renderMmExamBox(examNode) : '');
+  return `<div class="mm-chapter">
+  <div class="mm-chapter-hdr" onclick="mmToggleChapter(this)">
+    <span class="mm-chapter-title">${ch.label}</span>
+    <span class="mm-chapter-arrow">›</span>
+  </div>
+  <div class="mm-chapter-body">${body}</div>
+</div>`;
+}
+
+function renderMmBody(children) {
+  if (!children.length) return '';
+  const hasSubs = children.some(c => c.children && c.children.length);
+  if (!hasSubs) {
+    return `<div class="mm-items">${children.map(c => `<span class="mm-item">${c.label}</span>`).join('')}</div>`;
+  }
+  const leaves = children.filter(c => !c.children || !c.children.length);
+  const subs   = children.filter(c =>  c.children &&  c.children.length);
+  let html = '';
+  if (leaves.length) html += `<div class="mm-items" style="margin-bottom:6px">${leaves.map(c => `<span class="mm-item">${c.label}</span>`).join('')}</div>`;
+  html += subs.map(c => renderMmSub(c)).join('');
+  return html;
+}
+
+function renderMmSub(node) {
+  if (!node.children || !node.children.length) return `<span class="mm-item">${node.label}</span>`;
+  const leaves = node.children.filter(c => !c.children || !c.children.length);
+  const subs   = node.children.filter(c =>  c.children &&  c.children.length);
+  let body = '';
+  if (leaves.length) body += `<div class="mm-items">${leaves.map(c => `<span class="mm-item">${c.label}</span>`).join('')}</div>`;
+  body += subs.map(c => renderMmSub(c)).join('');
+  return `<div class="mm-sub">
+  <div class="mm-sub-hdr" onclick="mmToggleSub(this)">
+    <span class="mm-sub-arrow">›</span><span>${node.label}</span>
+  </div>
+  <div class="mm-sub-body">${body}</div>
+</div>`;
+}
+
+function renderMmExamBox(node) {
+  return `<div class="mm-exam-box">
+  <div class="mm-exam-label">⭐ 시험 포인트</div>
+  <div class="mm-exam-items">${node.children.map(c => `<span class="mm-exam-item">${c.label}</span>`).join('')}</div>
+</div>`;
+}
+
+function mmToggleChapter(hdr) {
+  hdr.classList.toggle('open');
+  hdr.nextElementSibling.classList.toggle('open');
+}
+function mmToggleSub(hdr) {
+  hdr.classList.toggle('open');
+  hdr.nextElementSibling.classList.toggle('open');
+}
+function mmToggleAll(expand) {
+  document.querySelectorAll('.mm-chapter-hdr').forEach(h => {
+    h.classList.toggle('open', expand);
+    h.nextElementSibling.classList.toggle('open', expand);
+  });
+}
 
 // ══════════════════════════════════════════════════════════
 // BOOT
