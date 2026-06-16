@@ -2,6 +2,9 @@
 *.py
 __pycache__/
 
+# Brainstorming visual companion (local-only mockups)
+.superpowers/
+
 # 개별 시험 JSON (all_questions.json 하나만 사용)
 2016_*회_*.json
 2017_*회_*.json
