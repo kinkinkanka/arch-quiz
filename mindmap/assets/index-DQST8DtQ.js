@@ -109,7 +109,7 @@ Error generating stack: `+y.message+`
 20층 아파트 외벽 미장 공사 → 쌍줄 강관비계 설치 → 3개 층마다 낙하물 방지망 설치
 
 ★ 시험 포인트
-벽이음 5×5m, 작업발판 40cm 이상, 기둥 간격 1.8m — 세 가지 수치가 핵심 출제 포인트`},{id:"1-2-2",label:"달비계",images:[{url:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Ladder.webp/330px-Ladder.webp.png",caption:"Step ladder used for low-height interior work"}],explanation:`건물 상부 구조체(옥상·지붕)에서 로프·체인으로 달아 내리는 작업 발판.
+벽이음 5×5m, 작업발판 40cm 이상, 기둥 간격 1.8m — 세 가지 수치가 핵심 출제 포인트`},{id:"1-2-2",label:"달비계",images:[{url:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Workers_on_suspended_scaffold_in_Korolyov.jpg/400px-Workers_on_suspended_scaffold_in_Korolyov.jpg",caption:"Workers on a suspended scaffold (달비계) on a high-rise building exterior"}],explanation:`건물 상부 구조체(옥상·지붕)에서 로프·체인으로 달아 내리는 작업 발판.
 
 ▶ 구조
 • 지지 로프(와이어로프): 건물 상부에 고정
