@@ -1830,6 +1830,7 @@ function openSingleQuestion(qid) {
 }
 
 window.addEventListener('message', (e) => {
+  if (e.origin !== window.location.origin) return;
   if (e.data && e.data.type === 'openQuestion' && e.data.id) {
     openSingleQuestion(e.data.id);
   }
