@@ -819,6 +819,7 @@ input, select, textarea { font-size: 16px !important; }
       <div id="qq-ai-box" class="ai-result-box"></div>
       <button class="btn btn-outline" id="qq-show-ans-btn" onclick="toggleModelAnswer()" style="margin-top:12px">📖 모범답안 보기</button>
       <div id="qq-model-ans" style="display:none;margin-top:12px;background:#f0fdf4;border-radius:8px;padding:14px;font-size:14px;line-height:1.8;white-space:pre-wrap;border-left:4px solid var(--primary)"></div>
+      <button class="btn btn-outline" id="qq-related-btn" onclick="openRelatedConcept()" style="margin-top:12px;display:none">🗺️ 관련 개념 보기</button>
       <button class="btn btn-primary" id="qq-next-btn" onclick="nextQQuestion()" style="margin-top:14px">다음 문제 →</button>
     </div>
   </div>
@@ -830,7 +831,7 @@ input, select, textarea { font-size: 16px !important; }
     <button class="hdr-back" onclick="go('home')">‹</button>
     <h1>건축시공 개념 마인드맵</h1>
   </div>
-  <iframe src="mindmap/index.html"
+  <iframe id="mindmap-frame" src="mindmap/index.html"
     style="flex:1;width:100%;border:none;display:block;"
     allow="fullscreen">
   </iframe>
@@ -887,6 +888,7 @@ const A = {
   questions: [],   // 주관식 문제 DB
   qfCat: '전체', qfDiff: '전체', qfPool: 'all', qfCnt: 10,
   qsess: null,
+  linkMap: { nodeToQuestions: {}, questionToNodes: {} },
 };
 
 // ══════════════════════════════════════════════════════════
@@ -988,6 +990,7 @@ async function init() {
       A.exams = JSON.parse(cached);
       if (A.exams.length) {
         await fetchQuestions();
+        await fetchLinkMap();
         await loadUserSettings(); buildYearChips(); updateStats(); loadChat(); go('home'); return;
       }
     } catch(e) {}
@@ -1007,6 +1010,13 @@ async function fetchQuestions() {
   } catch(e) {}
 }
 
+async function fetchLinkMap() {
+  try {
+    const r = await fetch('linkMap.json');
+    if (r.ok) A.linkMap = await r.json();
+  } catch(e) {}
+}
+
 async function fetchDB() {
   setLoadMsg('자료 목록 불러오는 중...');
   try {
@@ -1019,6 +1029,7 @@ async function fetchDB() {
     setLoadMsg('❌ exams.json 로드 실패: ' + e.message);
   }
   await fetchQuestions();
+  await fetchLinkMap();
 }
 
 function setLoadMsg(m) { const el = $('load-msg'); if (el) el.textContent = m; }
@@ -1026,14 +1037,14 @@ function setLoadMsg(m) { const el = $('load-msg'); if (el) el.textContent = m; }
 // ══════════════════════════════════════════════════════════
 // SCREEN NAV
 // ══════════════════════════════════════════════════════════
-function go(name) {
+function go(name, opts) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('s-' + name).classList.add('active');
   window.scrollTo(0, 0);
   if (name === 'home')   { updateStats(); renderTrendChart(); renderYearChart(); }
   if (name === 'settings') { loadSettingsUI(); }
   if (name === 'browse') { renderExamList(); }
-  if (name === 'mindmap') { initMindmap(); }
+  if (name === 'mindmap') { setMindmapFocus(opts && opts.focus); }
   if (name === 'qfilter') { buildQCatChips(); updateQFilterInfo(); }
   if (name === 'viewer') {
     document.body.classList.add('in-viewer');
@@ -1045,6 +1056,14 @@ function go(name) {
     document.body.classList.remove('in-viewer');
     window.removeEventListener('resize', syncChatHeight);
   }
+}
+
+function setMindmapFocus(focusId) {
+  const frame = $('mindmap-frame');
+  if (!frame) return;
+  frame.src = focusId
+    ? 'mindmap/index.html?focus=' + encodeURIComponent(focusId)
+    : 'mindmap/index.html';
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1748,6 +1767,8 @@ ${(q.keywords||[]).join(', ')}
     $('qq-ai-box').innerHTML = renderMd(reply);
     $('qq-model-ans').textContent = q.answer;
     $('qq-result').style.display='block'; $('qq-ans-area').style.display='none';
+    const relatedNodes = (A.linkMap.questionToNodes || {})[q.id];
+    $('qq-related-btn').style.display = (relatedNodes && relatedNodes.length) ? 'block' : 'none';
     const ta=A.qsess.scores.filter(s=>s!==null).length;
     const ts=A.qsess.scores.reduce((a,s)=>a+(s||0),0);
     const tm=A.qsess.qs.slice(0,ta).reduce((a,q2)=>a+q2.points,0);
@@ -1782,347 +1803,26 @@ function exitQQuiz() {
   go('home');
 }
 
-// ══════════════════════════════════════════════════════════
-// MINDMAP DATA
-// ══════════════════════════════════════════════════════════
-const MINDMAP_DATA = {
-  id: 'root', label: '건축시공',
-  children: [
-    { id:'1', label:'1. 가설공사', children:[
-      { id:'1-1', label:'규준틀' },
-      { id:'1-2', label:'비계', children:[
-        { id:'1-2-1', label:'강관비계' }, { id:'1-2-2', label:'달비계' },
-        { id:'1-2-3', label:'말비계' },   { id:'1-2-4', label:'통나무비계' },
-      ]},
-      { id:'1-3', label:'가설시설 (울타리·창고·사무소)' },
-      { id:'1-exam', label:'[시험 포인트]', children:[
-        { id:'1-e1', label:'비계: 강관·달·말·통나무' },
-        { id:'1-e2', label:'규준틀의 역할과 설치' },
-        { id:'1-e3', label:'흙의 성질: 함수비·간극비·포화도' },
-        { id:'1-e4', label:'지반조사: 보링·SPT·베인시험' },
-      ]},
-    ]},
-    { id:'2', label:'2. 토공사', children:[
-      { id:'2-1', label:'터파기', children:[
-        { id:'2-1-1', label:'줄파기' }, { id:'2-1-2', label:'온통파기' }, { id:'2-1-3', label:'독립파기' },
-      ]},
-      { id:'2-2', label:'흙막이공사', children:[
-        { id:'2-2-1', label:'H-Pile + 흙막이판' }, { id:'2-2-2', label:'시트파일' },
-        { id:'2-2-3', label:'슬러리월' }, { id:'2-2-4', label:'어스앵커' },
-      ]},
-      { id:'2-3', label:'지반개량', children:[
-        { id:'2-3-1', label:'웰포인트' }, { id:'2-3-2', label:'딥웰' },
-        { id:'2-3-3', label:'샌드드레인' }, { id:'2-3-4', label:'페이퍼드레인' },
-      ]},
-      { id:'2-4', label:'토량계산', children:[
-        { id:'2-4-1', label:'토량변화율 (L, C)' }, { id:'2-4-2', label:'흐트러진 토량' }, { id:'2-4-3', label:'다진 토량' },
-      ]},
-      { id:'2-exam', label:'[시험 포인트]', children:[
-        { id:'2-e1', label:'터파기: 줄·온통·독립파기' },
-        { id:'2-e2', label:'흙막이: H-Pile·시트·슬러리월·앵커' },
-        { id:'2-e3', label:'지반개량: 웰포·딥웰·샌드드레인' },
-        { id:'2-e4', label:'토량변화율 (L·C)' },
-      ]},
-    ]},
-    { id:'3', label:'3. 기초공사', children:[
-      { id:'3-1', label:'직접기초', children:[
-        { id:'3-1-1', label:'독립기초' }, { id:'3-1-2', label:'줄기초' },
-        { id:'3-1-3', label:'복합기초' }, { id:'3-1-4', label:'온통기초 (매트기초)' },
-      ]},
-      { id:'3-2', label:'말뚝기초', children:[
-        { id:'3-2-1', label:'나무말뚝' }, { id:'3-2-2', label:'RC말뚝' },
-        { id:'3-2-3', label:'PC말뚝' }, { id:'3-2-4', label:'PHC말뚝' },
-        { id:'3-2-5', label:'강관말뚝' }, { id:'3-2-6', label:'H형강말뚝' },
-      ]},
-      { id:'3-3', label:'말뚝 시공법', children:[
-        { id:'3-3-1', label:'항타공법' }, { id:'3-3-2', label:'프리보링공법' }, { id:'3-3-3', label:'중굴공법' },
-      ]},
-      { id:'3-4', label:'케이슨기초', children:[
-        { id:'3-4-1', label:'오픈케이슨' }, { id:'3-4-2', label:'공기케이슨' }, { id:'3-4-3', label:'박스케이슨' },
-      ]},
-      { id:'3-exam', label:'[시험 포인트]', children:[
-        { id:'3-e1', label:'직접기초: 독립·줄·복합·온통기초' },
-        { id:'3-e2', label:'말뚝: 나무·RC·PC·PHC·강관·H형강' },
-        { id:'3-e3', label:'시공법: 항타·프리보링·중굴공법' },
-        { id:'3-e4', label:'케이슨: 오픈·공기·박스' },
-      ]},
-    ]},
-    { id:'4', label:'4. 철근콘크리트공사', children:[
-      { id:'4-1', label:'거푸집', children:[
-        { id:'4-1-1', label:'재래식 거푸집' }, { id:'4-1-2', label:'갱폼 (Gang Form)' },
-        { id:'4-1-3', label:'슬립폼 (Slip Form)' }, { id:'4-1-4', label:'터널폼 (Tunnel Form)' },
-        { id:'4-1-5', label:'플라잉폼 (Flying Form)' }, { id:'4-1-6', label:'알폼 (Al Form)' },
-      ]},
-      { id:'4-2', label:'철근공사', children:[
-        { id:'4-2-1', label:'철근의 종류 (SR, HD)' }, { id:'4-2-2', label:'피복두께' },
-        { id:'4-2-3', label:'이음 (겹침·기계적·용접)' }, { id:'4-2-4', label:'정착길이' }, { id:'4-2-5', label:'갈고리 (Hook)' },
-      ]},
-      { id:'4-3', label:'콘크리트 재료', children:[
-        { id:'4-3-1', label:'시멘트 종류' }, { id:'4-3-2', label:'골재 (잔골재·굵은골재)' },
-        { id:'4-3-3', label:'혼화재료 (혼화재·혼화제)' },
-      ]},
-      { id:'4-4', label:'콘크리트 배합', children:[
-        { id:'4-4-1', label:'물-시멘트비 (W/C)' }, { id:'4-4-2', label:'슬럼프 (Slump)' },
-        { id:'4-4-3', label:'공기량' }, { id:'4-4-4', label:'배합강도' },
-      ]},
-      { id:'4-5', label:'콘크리트 시공', children:[
-        { id:'4-5-1', label:'비비기 (믹싱)' }, { id:'4-5-2', label:'운반' },
-        { id:'4-5-3', label:'타설·다짐' }, { id:'4-5-4', label:'양생 (습윤·증기)' },
-      ]},
-      { id:'4-6', label:'특수 콘크리트', children:[
-        { id:'4-6-1', label:'한중콘크리트' }, { id:'4-6-2', label:'서중콘크리트' },
-        { id:'4-6-3', label:'수중콘크리트' }, { id:'4-6-4', label:'매스콘크리트' },
-        { id:'4-6-5', label:'경량콘크리트' }, { id:'4-6-6', label:'프리팩트콘크리트' }, { id:'4-6-7', label:'PSC (프리스트레스트)' },
-      ]},
-      { id:'4-exam', label:'[시험 포인트]', children:[
-        { id:'4-e1', label:'거푸집: 갱폼·슬립·터널·플라잉·알폼' },
-        { id:'4-e2', label:'철근: SR·HD, 피복두께, 이음, 정착' },
-        { id:'4-e3', label:'혼화재(플라이애시) vs 혼화제(AE제)' },
-        { id:'4-e4', label:'W/C·슬럼프·공기량·배합강도' },
-        { id:'4-e5', label:'타설·다짐·양생(습윤·증기)' },
-        { id:'4-e6', label:'특수콘크리트: 한중·서중·수중·매스' },
-      ]},
-    ]},
-    { id:'5', label:'5. 철골공사', children:[
-      { id:'5-1', label:'부재 종류', children:[
-        { id:'5-1-1', label:'H형강' }, { id:'5-1-2', label:'I형강' },
-        { id:'5-1-3', label:'ㄱ형강 (앵글)' }, { id:'5-1-4', label:'ㄷ형강 (채널)' },
-      ]},
-      { id:'5-2', label:'접합', children:[
-        { id:'5-2-1', label:'용접접합', children:[
-          { id:'5-2-1-1', label:'맞댐용접' }, { id:'5-2-1-2', label:'필릿용접' },
-        ]},
-        { id:'5-2-2', label:'볼트접합', children:[
-          { id:'5-2-2-1', label:'고력볼트' }, { id:'5-2-2-2', label:'일반볼트 (앙카볼트)' },
-        ]},
-      ]},
-      { id:'5-3', label:'내화피복', children:[
-        { id:'5-3-1', label:'뿜칠공법' }, { id:'5-3-2', label:'타설공법' }, { id:'5-3-3', label:'붙이기공법' },
-      ]},
-      { id:'5-exam', label:'[시험 포인트]', children:[
-        { id:'5-e1', label:'부재: H·I·ㄱ(앵글)·ㄷ(채널)형강' },
-        { id:'5-e2', label:'용접: 맞댐용접·필릿용접' },
-        { id:'5-e3', label:'볼트: 고력볼트·일반볼트' },
-        { id:'5-e4', label:'내화피복: 뿜칠·타설·붙이기' },
-        { id:'5-e5', label:'철골세우기 순서' },
-      ]},
-    ]},
-    { id:'6', label:'6. 조적공사', children:[
-      { id:'6-1', label:'벽돌쌓기', children:[
-        { id:'6-1-1', label:'길이쌓기' }, { id:'6-1-2', label:'마구리쌓기' },
-        { id:'6-1-3', label:'영국식쌓기' }, { id:'6-1-4', label:'화란식쌓기' },
-        { id:'6-1-5', label:'미국식쌓기' }, { id:'6-1-6', label:'불식쌓기' },
-      ]},
-      { id:'6-2', label:'블록쌓기' },
-      { id:'6-3', label:'돌쌓기', children:[
-        { id:'6-3-1', label:'찰쌓기' }, { id:'6-3-2', label:'메쌓기' },
-      ]},
-      { id:'6-exam', label:'[시험 포인트]', children:[
-        { id:'6-e1', label:'쌓기: 길이·마구리·영국·화란·미국·불식' },
-        { id:'6-e2', label:'블록쌓기 방법' },
-        { id:'6-e3', label:'찰쌓기(모르타르) vs 메쌓기(건식)' },
-      ]},
-    ]},
-    { id:'7', label:'7. 방수공사', children:[
-      { id:'7-1', label:'아스팔트 방수' }, { id:'7-2', label:'시트 방수' },
-      { id:'7-3', label:'도막 방수' }, { id:'7-4', label:'시멘트 액체 방수' },
-      { id:'7-5', label:'규산질 방수' }, { id:'7-6', label:'실링 (Sealing) 방수' },
-      { id:'7-exam', label:'[시험 포인트]', children:[
-        { id:'7-e1', label:'방수공법: 아스팔트·시트·도막·액체·규산질·실링' },
-        { id:'7-e2', label:'아스팔트 방수 공법 순서' },
-      ]},
-    ]},
-    { id:'8', label:'8. 미장·타일공사', children:[
-      { id:'8-1', label:'미장공사', children:[
-        { id:'8-1-1', label:'시멘트 모르타르' }, { id:'8-1-2', label:'석고 플라스터' }, { id:'8-1-3', label:'테라조' },
-      ]},
-      { id:'8-2', label:'타일공사', children:[
-        { id:'8-2-1', label:'압착붙이기' }, { id:'8-2-2', label:'개량압착붙이기' },
-        { id:'8-2-3', label:'떠붙이기' }, { id:'8-2-4', label:'접착붙이기' },
-      ]},
-      { id:'8-exam', label:'[시험 포인트]', children:[
-        { id:'8-e1', label:'미장: 시멘트모르타르·석고플라스터·테라조' },
-        { id:'8-e2', label:'타일: 압착·개량압착·떠붙이기·접착' },
-      ]},
-    ]},
-    { id:'9', label:'9. 창호·유리공사', children:[
-      { id:'9-1', label:'창호공사', children:[
-        { id:'9-1-1', label:'알루미늄창호' }, { id:'9-1-2', label:'PVC창호' },
-        { id:'9-1-3', label:'목재창호' }, { id:'9-1-4', label:'스틸창호' },
-      ]},
-      { id:'9-2', label:'유리공사', children:[
-        { id:'9-2-1', label:'판유리' }, { id:'9-2-2', label:'복층유리' },
-        { id:'9-2-3', label:'강화유리' }, { id:'9-2-4', label:'접합유리' }, { id:'9-2-5', label:'로이유리' },
-      ]},
-      { id:'9-exam', label:'[시험 포인트]', children:[
-        { id:'9-e1', label:'창호: 알루미늄·PVC·목재·스틸' },
-        { id:'9-e2', label:'유리: 판·복층·강화·접합·로이' },
-      ]},
-    ]},
-    { id:'10', label:'10. 도장공사', children:[
-      { id:'10-1', label:'바탕처리' },
-      { id:'10-2', label:'도료 종류', children:[
-        { id:'10-2-1', label:'유성페인트' }, { id:'10-2-2', label:'수성페인트' },
-        { id:'10-2-3', label:'에폭시' }, { id:'10-2-4', label:'우레탄' }, { id:'10-2-5', label:'락카' },
-      ]},
-      { id:'10-exam', label:'[시험 포인트]', children:[
-        { id:'10-e1', label:'도료: 유성·수성·에폭시·우레탄·락카' },
-        { id:'10-e2', label:'바탕처리 순서' },
-      ]},
-    ]},
-    { id:'11', label:'11. 수장공사', children:[
-      { id:'11-1', label:'바닥', children:[
-        { id:'11-1-1', label:'비닐타일' }, { id:'11-1-2', label:'카펫' },
-        { id:'11-1-3', label:'목재마루 (원목·강마루·강화마루)' },
-      ]},
-      { id:'11-2', label:'천장', children:[
-        { id:'11-2-1', label:'석고보드' }, { id:'11-2-2', label:'텍스' },
-      ]},
-      { id:'11-3', label:'벽', children:[
-        { id:'11-3-1', label:'벽지' }, { id:'11-3-2', label:'합판' },
-      ]},
-    ]},
-    { id:'12', label:'12. 지붕·커튼월공사', children:[
-      { id:'12-1', label:'지붕공사', children:[
-        { id:'12-1-1', label:'기와지붕' }, { id:'12-1-2', label:'금속지붕' }, { id:'12-1-3', label:'아스팔트싱글' },
-      ]},
-      { id:'12-2', label:'커튼월공사', children:[
-        { id:'12-2-1', label:'멀리언방식' }, { id:'12-2-2', label:'스팬드럴방식' },
-      ]},
-      { id:'12-exam', label:'[시험 포인트]', children:[
-        { id:'12-e1', label:'지붕: 기와·금속·아스팔트싱글' },
-        { id:'12-e2', label:'커튼월: 멀리언방식·스팬드럴방식' },
-      ]},
-    ]},
-    { id:'13', label:'13. 공사관리', children:[
-      { id:'13-1', label:'공정관리', children:[
-        { id:'13-1-1', label:'바차트 (Bar Chart)' },
-        { id:'13-1-2', label:'네트워크공정표', children:[
-          { id:'13-1-2-1', label:'CPM (주공정선)' }, { id:'13-1-2-2', label:'PERT' },
-        ]},
-        { id:'13-1-3', label:'공기단축' },
-      ]},
-      { id:'13-2', label:'품질관리', children:[
-        { id:'13-2-1', label:'관리도 (X-R 관리도)' },
-        { id:'13-2-2', label:'비파괴검사', children:[
-          { id:'13-2-2-1', label:'방사선검사 (RT)' }, { id:'13-2-2-2', label:'초음파검사 (UT)' },
-          { id:'13-2-2-3', label:'자분탐상검사 (MT)' }, { id:'13-2-2-4', label:'침투탐상검사 (PT)' },
-        ]},
-        { id:'13-2-3', label:'콘크리트 시험 (슬럼프·공기량·압축강도)' },
-      ]},
-      { id:'13-3', label:'안전관리' },
-      { id:'13-exam', label:'[시험 포인트]', children:[
-        { id:'13-e1', label:'3대 관리: 원가·공정·품질' },
-        { id:'13-e2', label:'5대 관리: +안전·환경' },
-        { id:'13-e3', label:'노무자: 직용·정용·날품' },
-        { id:'13-e4', label:'도급: 일식·분할·공동도급·턴키' },
-        { id:'13-e5', label:'VE(가치공학) 특징' },
-        { id:'13-e6', label:'EC화·CIC·CALS·PMIS' },
-        { id:'13-e7', label:'CPM·PERT — 플로트·주공정선' },
-        { id:'13-e8', label:'품질도구: X-R관리도·파레토·히스토그램' },
-      ]},
-    ]},
-    { id:'14', label:'14. 목공사', children:[
-      { id:'14-1', label:'목재의 결점', children:[
-        { id:'14-1-1', label:'옹이' }, { id:'14-1-2', label:'갈라짐' },
-        { id:'14-1-3', label:'껍질박이' }, { id:'14-1-4', label:'썩음' },
-      ]},
-      { id:'14-2', label:'함수율·섬유포화점 (28~30%)' },
-      { id:'14-3', label:'이음과 맞춤', children:[
-        { id:'14-3-1', label:'장부이음' }, { id:'14-3-2', label:'반턱이음' }, { id:'14-3-3', label:'주먹장이음' },
-      ]},
-      { id:'14-4', label:'방부·방충 처리법' },
-      { id:'14-exam', label:'[시험 포인트]', children:[
-        { id:'14-e1', label:'결점: 옹이·갈라짐·껍질박이·썩음' },
-        { id:'14-e2', label:'섬유포화점 28~30%' },
-        { id:'14-e3', label:'이음과 맞춤 종류' },
-        { id:'14-e4', label:'방부·방충 처리법' },
-      ]},
-    ]},
-    { id:'15', label:'15. 건축적산', children:[
-      { id:'15-1', label:'수량산출 원칙' },
-      { id:'15-2', label:'공종별 적산', children:[
-        { id:'15-2-1', label:'콘크리트 적산' }, { id:'15-2-2', label:'철근 적산' },
-        { id:'15-2-3', label:'거푸집 적산' }, { id:'15-2-4', label:'조적 적산' },
-      ]},
-      { id:'15-exam', label:'[시험 포인트]', children:[
-        { id:'15-e1', label:'적산총칙: 수량산출 원칙' },
-        { id:'15-e2', label:'공종별: 콘크리트·철근·거푸집·조적' },
-      ]},
-    ]},
-  ]
-};
-
-// ── Mindmap render functions ──
-function initMindmap() {
-  const root = document.getElementById('mm-root');
-  if (!root || root.dataset.built) return;
-  root.dataset.built = '1';
-  root.innerHTML = MINDMAP_DATA.children.map(renderMmChapter).join('');
+function openSingleQuestion(qid) {
+  const q = A.questions.find(x => x.id === qid);
+  if (!q) { toast('문제를 찾을 수 없습니다.'); return; }
+  A.qsess = { qs: [q], idx: 0, scores: new Array(1).fill(null) };
+  go('qquiz');
+  renderQQuestion();
 }
 
-function renderMmChapter(ch) {
-  const examNode = ch.children.find(c => c.label === '[시험 포인트]');
-  const regular  = ch.children.filter(c => c.label !== '[시험 포인트]');
-  const body = renderMmBody(regular) + (examNode ? renderMmExamBox(examNode) : '');
-  return `<div class="mm-chapter">
-  <div class="mm-chapter-hdr" onclick="mmToggleChapter(this)">
-    <span class="mm-chapter-title">${ch.label}</span>
-    <span class="mm-chapter-arrow">›</span>
-  </div>
-  <div class="mm-chapter-body">${body}</div>
-</div>`;
-}
-
-function renderMmBody(children) {
-  if (!children.length) return '';
-  const hasSubs = children.some(c => c.children && c.children.length);
-  if (!hasSubs) {
-    return `<div class="mm-items">${children.map(c => `<span class="mm-item">${c.label}</span>`).join('')}</div>`;
+window.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'openQuestion' && e.data.id) {
+    openSingleQuestion(e.data.id);
   }
-  const leaves = children.filter(c => !c.children || !c.children.length);
-  const subs   = children.filter(c =>  c.children &&  c.children.length);
-  let html = '';
-  if (leaves.length) html += `<div class="mm-items" style="margin-bottom:6px">${leaves.map(c => `<span class="mm-item">${c.label}</span>`).join('')}</div>`;
-  html += subs.map(c => renderMmSub(c)).join('');
-  return html;
-}
+});
 
-function renderMmSub(node) {
-  if (!node.children || !node.children.length) return `<span class="mm-item">${node.label}</span>`;
-  const leaves = node.children.filter(c => !c.children || !c.children.length);
-  const subs   = node.children.filter(c =>  c.children &&  c.children.length);
-  let body = '';
-  if (leaves.length) body += `<div class="mm-items">${leaves.map(c => `<span class="mm-item">${c.label}</span>`).join('')}</div>`;
-  body += subs.map(c => renderMmSub(c)).join('');
-  return `<div class="mm-sub">
-  <div class="mm-sub-hdr" onclick="mmToggleSub(this)">
-    <span class="mm-sub-arrow">›</span><span>${node.label}</span>
-  </div>
-  <div class="mm-sub-body">${body}</div>
-</div>`;
-}
-
-function renderMmExamBox(node) {
-  return `<div class="mm-exam-box">
-  <div class="mm-exam-label">⭐ 시험 포인트</div>
-  <div class="mm-exam-items">${node.children.map(c => `<span class="mm-exam-item">${c.label}</span>`).join('')}</div>
-</div>`;
-}
-
-function mmToggleChapter(hdr) {
-  hdr.classList.toggle('open');
-  hdr.nextElementSibling.classList.toggle('open');
-}
-function mmToggleSub(hdr) {
-  hdr.classList.toggle('open');
-  hdr.nextElementSibling.classList.toggle('open');
-}
-function mmToggleAll(expand) {
-  document.querySelectorAll('.mm-chapter-hdr').forEach(h => {
-    h.classList.toggle('open', expand);
-    h.nextElementSibling.classList.toggle('open', expand);
-  });
+function openRelatedConcept() {
+  const { qs, idx } = A.qsess;
+  const q = qs[idx];
+  const nodeIds = (A.linkMap.questionToNodes || {})[q.id];
+  if (!nodeIds || !nodeIds.length) return;
+  go('mindmap', { focus: nodeIds[0] });
 }
 
 // ══════════════════════════════════════════════════════════
