@@ -829,7 +829,7 @@ input, select, textarea { font-size: 16px !important; }
 <!-- ════════════════ MINDMAP ═══ -->
 <div class="screen" id="s-mindmap">
   <div class="hdr">
-    <button class="hdr-back" onclick="go('home')">‹</button>
+    <button class="hdr-back" onclick="leaveMindmap()">‹</button>
     <h1>건축시공 개념 마인드맵</h1>
   </div>
   <iframe id="mindmap-frame" src="mindmap/index.html"
@@ -1038,7 +1038,18 @@ function setLoadMsg(m) { const el = $('load-msg'); if (el) el.textContent = m; }
 // ══════════════════════════════════════════════════════════
 // SCREEN NAV
 // ══════════════════════════════════════════════════════════
+
+// When navigating to mindmap from quiz, stores a callback so the back button
+// returns to the quiz instead of home. Cleared on any non-mindmap navigation.
+let _mmReturnFn = null;
+
+function leaveMindmap() {
+  if (_mmReturnFn) { const fn = _mmReturnFn; _mmReturnFn = null; fn(); }
+  else go('home');
+}
+
 function go(name, opts) {
+  if (name !== 'mindmap') _mmReturnFn = null;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('s-' + name).classList.add('active');
   window.scrollTo(0, 0);
@@ -1842,6 +1853,8 @@ function openRelatedConcept() {
   const nodeIds = (A.linkMap.questionToNodes || {})[q.id];
   if (!nodeIds || !nodeIds.length) return;
   go('mindmap', { focus: nodeIds[0] });
+  // Set AFTER go() so go()'s _mmReturnFn reset doesn't clear this
+  _mmReturnFn = () => go('qquiz');
 }
 
 // ══════════════════════════════════════════════════════════
