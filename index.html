@@ -848,6 +848,10 @@ input, select, textarea { font-size: 16px !important; }
       <div class="stat-grid" id="stats-summary"></div>
     </div>
     <div class="card">
+      <div class="sec">📊 문제별 점수 분포 (전체 <span id="stats-dist-total">-</span>문제)</div>
+      <div id="stats-distribution"></div>
+    </div>
+    <div class="card">
       <div class="sec">📅 학습 달력 (최근 70일)</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:11px;color:var(--muted)">
         <span style="display:flex;align-items:center;gap:3px"><span style="width:10px;height:10px;border-radius:2px;background:#e2e8f0;display:inline-block"></span>없음</span>
@@ -2001,6 +2005,7 @@ function recordQSession(qs, scores) {
 
 function renderStats() {
   renderStatsSummary();
+  renderScoreDistribution();
   renderHeatmap();
   renderCategoryChart();
   renderQScoreTrend();
@@ -2026,6 +2031,51 @@ function renderStatsSummary() {
     <div class="stat-item"><div class="stat-num" style="color:${col}">${avgScore}%</div><div class="stat-lbl">평균 점수</div></div>
     <div class="stat-item"><div class="stat-num">${mastered}</div><div class="stat-lbl">마스터 (80↑)</div></div>
     <div class="stat-item"><div class="stat-num">${totalTries}</div><div class="stat-lbl">총 풀이 횟수</div></div>`;
+}
+
+function renderScoreDistribution() {
+  const el = $('stats-distribution');
+  const totEl = $('stats-dist-total');
+  if (!el) return;
+  const recs = getQRecs();
+  const total = A.questions.length;
+  if (totEl) totEl.textContent = total;
+  if (!total) return;
+
+  let unseen = 0, low = 0, mid = 0, high = 0;
+  A.questions.forEach(q => {
+    const rec = recs[q.id];
+    if (!rec) { unseen++; return; }
+    const pct = (rec.lastScore !== undefined ? rec.lastScore : (rec.score || 0)) / q.points * 100;
+    if (pct < 60) low++;
+    else if (pct < 80) mid++;
+    else high++;
+  });
+
+  const segments = [
+    { count: high,   color: '#16a34a', label: '마스터 (80%↑)' },
+    { count: mid,    color: '#fbbf24', label: '보통 (60~79%)' },
+    { count: low,    color: '#f87171', label: '취약 (<60%)' },
+    { count: unseen, color: '#e2e8f0', label: '미풀이' },
+  ];
+  const barHtml = segments.filter(s => s.count > 0).map(s =>
+    `<div style="flex:${s.count};background:${s.color}" title="${s.label}: ${s.count}문제"></div>`
+  ).join('');
+  const legendHtml = segments.map(s => {
+    const numCol = s.color === '#e2e8f0' ? '#94a3b8' : s.color;
+    return `<span><b style="color:${numCol}">${s.count}</b> ${s.label}</span>`;
+  }).join('');
+
+  // Percentage labels on the bar
+  const pctLabels = segments.filter(s => s.count > 0 && s.count/total >= 0.08).map(s =>
+    `<div style="flex:${s.count};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${s.color==='#e2e8f0'||s.color==='#fbbf24'?'#475569':'#fff'}">${Math.round(s.count/total*100)}%</div>`
+  ).join('');
+
+  el.innerHTML = `
+    <div style="height:36px;border-radius:10px;overflow:hidden;display:flex;margin-bottom:8px">${barHtml}</div>
+    <div style="height:0;overflow:hidden;display:flex;margin-top:-44px;margin-bottom:8px">${pctLabels}</div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:44px">${legendHtml}</div>
+  `;
 }
 
 function renderHeatmap() {
