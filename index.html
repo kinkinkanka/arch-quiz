@@ -1018,7 +1018,46 @@ async function loadUserSettings() {
       if (cfg.api_key) { A.key = cfg.api_key; localStorage.setItem('sil_key', A.key); }
       const s = cfg.settings || {};
       if (s.model) { A.model = s.model; }
+
+      // Restore synced quiz records: merge keeping whichever has more tries
+      if (s.q_recs && Object.keys(s.q_recs).length) {
+        const local = JSON.parse(localStorage.getItem(QR_KEY) || '{}');
+        const merged = { ...s.q_recs };
+        Object.keys(local).forEach(id => {
+          if (!merged[id] || (local[id].tries || 0) > (merged[id].tries || 0)) merged[id] = local[id];
+        });
+        saveQRecs(merged);
+      }
+
+      // Restore session trend: union of Supabase + local, deduplicated
+      if (s.q_sessions && s.q_sessions.length) {
+        let local = [];
+        try { local = JSON.parse(localStorage.getItem('sil_q_sessions') || '[]'); } catch(e) {}
+        const seen = new Set();
+        const merged = [...s.q_sessions, ...local]
+          .filter(x => { const k = x.date + '_' + x.avgScore; if (seen.has(k)) return false; seen.add(k); return true; })
+          .sort((a, b) => a.date.localeCompare(b.date)).slice(-50);
+        localStorage.setItem('sil_q_sessions', JSON.stringify(merged));
+      }
+
+      // Restore exam study records (Supabase wins per key)
+      if (s.exam_recs && Object.keys(s.exam_recs).length) {
+        A.recs = { ...A.recs, ...s.exam_recs };
+        saveRecs();
+      }
     }
+  } catch(e) {}
+}
+
+async function syncToSupabase() {
+  if (!_sbUser) return;
+  try {
+    const q_recs     = JSON.parse(localStorage.getItem(QR_KEY) || '{}');
+    const q_sessions = JSON.parse(localStorage.getItem('sil_q_sessions') || '[]');
+    await sb.from('user_settings').upsert(
+      { user_id: _sbUser.id, settings: { model: A.model, q_recs, q_sessions, exam_recs: A.recs } },
+      { onConflict: 'user_id' }
+    );
   } catch(e) {}
 }
 
@@ -1388,6 +1427,7 @@ function setStatus(status) {
   const wasFirstDone = !prev.status && actualStatus === 'done';
   A.recs[id] = { ...prev, status: actualStatus, date: new Date().toISOString() };
   saveRecs();
+  syncToSupabase();
   renderStatusButtons(actualStatus);
   updateDateInfo(A.recs[id].date);
   if (wasFirstDone) recordSession();
@@ -1905,6 +1945,7 @@ function nextQQuestion() {
 function showQResult() {
   const {qs, scores} = A.qsess;
   recordQSession(qs, scores);
+  syncToSupabase();
   const ts = scores.reduce((a,s)=>a+(s||0),0);
   const tm = qs.reduce((a,q)=>a+q.points,0);
   const rate = tm>0 ? Math.round(ts/tm*100) : 0;
