@@ -588,7 +588,7 @@ input, select, textarea { font-size: 16px !important; }
     <button class="btn btn-outline" id="btn-undone" onclick="browseUndone()">🆕 미학습 자료 보기</button>
     <button class="btn btn-outline" id="btn-review" onclick="browseReview()">🔄 재학습 필요 보기</button>
     <button class="btn btn-outline" onclick="go('stats')">📊 학습 통계 보기</button>
-    <button class="btn btn-outline" onclick="go('mindmap')">🗺️ 건축시공 개념 마인드맵</button>
+    <button class="btn btn-outline" onclick="go('mindmap')">🗺️ 건축기사 개념 마인드맵 (시공·구조)</button>
     <button class="btn btn-ghost" onclick="go('settings')">⚙️ 설정 (OpenAI API 키)</button>
     <button class="btn btn-danger" onclick="clearRecs()">🗑️ 학습 기록 초기화</button>
   </div>
@@ -880,7 +880,7 @@ input, select, textarea { font-size: 16px !important; }
 <div class="screen" id="s-mindmap">
   <div class="hdr">
     <button class="hdr-back" onclick="leaveMindmap()">‹</button>
-    <h1>건축시공 개념 마인드맵</h1>
+    <h1>건축기사 개념 마인드맵</h1>
   </div>
   <iframe id="mindmap-frame" src="mindmap/index.html"
     style="flex:1;width:100%;border:none;display:block;"
