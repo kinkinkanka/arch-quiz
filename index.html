@@ -520,7 +520,12 @@ input, select, textarea { font-size: 16px !important; }
   padding:20px 24px; background:#f8fafc;
 }
 .fc-answer-label { font-size:11px; font-weight:700; color:var(--primary); margin-bottom:8px; }
-.fc-answer-text { font-size:14px; line-height:1.75; white-space:pre-wrap; }
+.fc-answer-text { font-size:14px; line-height:1.75; }
+.fc-question table, .fc-answer-text table { width:100%; border-collapse:collapse; margin:8px 0; font-size:12px; }
+.fc-question th, .fc-answer-text th { background:#f1f5f9; padding:5px 7px; border:1px solid var(--border); font-weight:700; text-align:center; white-space:nowrap; }
+.fc-question td, .fc-answer-text td { padding:5px 7px; border:1px solid var(--border); text-align:center; }
+.fc-question { overflow-x:auto; text-align:left !important; }
+.fc-my-answer-text { font-size:14px; line-height:1.75; white-space:pre-wrap; }
 .fc-btn-row { display:flex; gap:10px; margin-bottom:10px; }
 .fc-btn-wrong {
   flex:1; padding:14px; background:#fef2f2; color:#dc2626;
@@ -2534,10 +2539,10 @@ function renderFCCard() {
   const actionArea = $('fc-action-area');
   const doneArea = $('fc-done-area');
 
-  const sanitize = s => (s || '').replace(/\\n/g, '\n');
+  const sanitize = s => (s || '').replace(/\\n/g, '<br>');
   if (yearEl) yearEl.textContent = card.year;
-  if (qEl) qEl.textContent = sanitize(card.question);
-  if (aEl) aEl.textContent = sanitize(card.answer);
+  if (qEl) qEl.innerHTML = sanitize(card.question);
+  if (aEl) aEl.innerHTML = sanitize(card.answer);
   if (ansArea) ansArea.classList.remove('show');
   if (actionArea) actionArea.style.display = 'none';
   if (doneArea) doneArea.style.display = 'none';
