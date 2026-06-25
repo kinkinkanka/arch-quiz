@@ -489,6 +489,60 @@ input, select, textarea { font-size: 16px !important; }
 }
 .mm-toggle-btn:hover { background:var(--bg); border-color:var(--primary); color:var(--primary); }
 
+/* ── Flashcards ── */
+.fc-mode-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+.fc-mode-btn {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:6px; padding:16px 12px; border:2px solid var(--border); border-radius:12px;
+  background:var(--card); cursor:pointer; transition:all .15s; text-align:center;
+  font-weight:600; font-size:14px; color:var(--text);
+}
+.fc-mode-btn .fc-mode-icon { font-size:24px; }
+.fc-mode-btn .fc-mode-cnt { font-size:11px; color:var(--muted); font-weight:400; }
+.fc-mode-btn:hover { border-color:var(--primary); color:var(--primary); }
+.fc-card {
+  background:var(--card); border-radius:16px; box-shadow:var(--shadow);
+  margin:0 0 16px; overflow:hidden; cursor:pointer; min-height:200px;
+}
+.fc-front {
+  padding:28px 24px; min-height:200px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; text-align:center; gap:12px;
+}
+.fc-year-tag {
+  font-size:11px; font-weight:700; color:var(--muted);
+  background:var(--bg); border-radius:20px; padding:3px 10px;
+}
+.fc-question { font-size:16px; font-weight:600; line-height:1.6; }
+.fc-tap-hint { font-size:12px; color:var(--muted); margin-top:4px; }
+.fc-answer-area { display:none; }
+.fc-answer-area.show {
+  display:block; border-top:1px solid var(--border);
+  padding:20px 24px; background:#f8fafc;
+}
+.fc-answer-label { font-size:11px; font-weight:700; color:var(--primary); margin-bottom:8px; }
+.fc-answer-text { font-size:14px; line-height:1.75; white-space:pre-wrap; }
+.fc-btn-row { display:flex; gap:10px; margin-bottom:10px; }
+.fc-btn-wrong {
+  flex:1; padding:14px; background:#fef2f2; color:#dc2626;
+  border:none; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer;
+}
+.fc-btn-wrong:active { background:#fee2e2; }
+.fc-btn-right {
+  flex:1; padding:14px; background:#f0fdf4; color:#16a34a;
+  border:none; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer;
+}
+.fc-btn-right:active { background:#dcfce7; }
+.fc-btn-master {
+  width:100%; padding:11px; background:var(--bg); color:#d97706;
+  border:1.5px solid #fbbf24; border-radius:10px; font-size:14px;
+  font-weight:600; cursor:pointer; transition:all .15s;
+}
+.fc-btn-master.is-master { background:#fffbeb; border-color:#f59e0b; }
+.fc-progress { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+.fc-progress-bar { flex:1; height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+.fc-progress-fill { height:100%; background:var(--primary); transition:width .3s; }
+.fc-progress-text { font-size:12px; color:var(--muted); min-width:52px; text-align:right; }
+
 /* ── Responsive ── */
 @media (max-width:899px) {
   .chat-sidebar { display:none; }
@@ -588,6 +642,7 @@ input, select, textarea { font-size: 16px !important; }
     <button class="btn btn-outline" id="btn-undone" onclick="browseUndone()">🆕 미학습 자료 보기</button>
     <button class="btn btn-outline" id="btn-review" onclick="browseReview()">🔄 재학습 필요 보기</button>
     <button class="btn btn-outline" onclick="go('stats')">📊 학습 통계 보기</button>
+    <button class="btn btn-outline" onclick="go('fcards')">🃏 시공 플래시카드 (423장)</button>
     <button class="btn btn-outline" onclick="go('mindmap')">🗺️ 건축기사 개념 마인드맵 (시공·구조)</button>
     <button class="btn btn-ghost" onclick="go('settings')">⚙️ 설정 (OpenAI API 키)</button>
     <button class="btn btn-danger" onclick="clearRecs()">🗑️ 학습 기록 초기화</button>
@@ -873,10 +928,103 @@ input, select, textarea { font-size: 16px !important; }
       <div class="sec">🎯 취약 문제 Top 10 (클릭하면 바로 풀기)</div>
       <div id="stats-weak"></div>
     </div>
+    <div class="card" id="fc-stats-card" style="display:none">
+      <div class="sec">🃏 플래시카드 통계</div>
+      <div class="stat-grid" id="fc-stats-summary" style="margin-bottom:14px"></div>
+      <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:8px">오답 횟수 분포</div>
+      <div id="fc-stats-dist" style="margin-bottom:16px"></div>
+      <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:8px">🔁 오답 Top 10</div>
+      <div id="fc-stats-weak"></div>
+    </div>
   </div>
 </div>
 
 <!-- ════════════════ MINDMAP ═══ -->
+<!-- ════ FLASHCARD HOME ════ -->
+<div class="screen" id="s-fcards">
+  <div class="hdr">
+    <button class="hdr-back" onclick="go('home')">‹</button>
+    <h1>🃏 시공 플래시카드</h1>
+  </div>
+  <div class="wrap">
+    <div class="card">
+      <div class="sec">카드 현황</div>
+      <div class="stat-grid" id="fc-stats-mini">
+        <div class="stat-item"><div class="stat-num" id="fc-mini-total">-</div><div class="stat-lbl">전체</div></div>
+        <div class="stat-item"><div class="stat-num" id="fc-mini-studied">-</div><div class="stat-lbl">학습함</div></div>
+        <div class="stat-item"><div class="stat-num" id="fc-mini-wrong">-</div><div class="stat-lbl">오답 있음</div></div>
+        <div class="stat-item"><div class="stat-num" id="fc-mini-mastered">-</div><div class="stat-lbl">암기 완료</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec">학습 모드 선택</div>
+      <div class="fc-mode-grid">
+        <button class="fc-mode-btn" onclick="startFC('all')">
+          <span class="fc-mode-icon">📚</span>
+          <span>전체 학습</span>
+          <span class="fc-mode-cnt" id="fc-cnt-all">- 장</span>
+        </button>
+        <button class="fc-mode-btn" onclick="startFC('wrong')">
+          <span class="fc-mode-icon">🔁</span>
+          <span>오답 복습</span>
+          <span class="fc-mode-cnt" id="fc-cnt-wrong">- 장</span>
+        </button>
+        <button class="fc-mode-btn" onclick="startFC('smart')">
+          <span class="fc-mode-icon">🧠</span>
+          <span>스마트 복습</span>
+          <span class="fc-mode-cnt" id="fc-cnt-smart">- 장</span>
+        </button>
+        <button class="fc-mode-btn" onclick="startFC('mastered')">
+          <span class="fc-mode-icon">⭐</span>
+          <span>암기 완료</span>
+          <span class="fc-mode-cnt" id="fc-cnt-mastered">- 장</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ FLASHCARD STUDY ════ -->
+<div class="screen" id="s-fcstudy">
+  <div class="hdr">
+    <button class="hdr-back" onclick="exitFC()">‹</button>
+    <h1 id="fc-study-title">플래시카드</h1>
+  </div>
+  <div class="wrap">
+    <div class="fc-progress">
+      <div class="fc-progress-bar"><div class="fc-progress-fill" id="fc-prog-fill" style="width:0%"></div></div>
+      <span class="fc-progress-text" id="fc-prog-text">0 / 0</span>
+    </div>
+    <div class="fc-card" onclick="flipFC()" id="fc-card">
+      <div class="fc-front" id="fc-front">
+        <span class="fc-year-tag" id="fc-year"></span>
+        <div class="fc-question" id="fc-question"></div>
+        <div class="fc-tap-hint">탭하여 정답 보기 👇</div>
+      </div>
+      <div class="fc-answer-area" id="fc-answer-area">
+        <div class="fc-answer-label">정답</div>
+        <div class="fc-answer-text" id="fc-answer"></div>
+      </div>
+    </div>
+    <div id="fc-action-area" style="display:none">
+      <div class="fc-btn-row">
+        <button class="fc-btn-wrong" onclick="recordFC(false)">✕ 틀렸어</button>
+        <button class="fc-btn-right" onclick="recordFC(true)">✅ 맞았어</button>
+      </div>
+      <button class="fc-btn-master" id="fc-master-btn" onclick="toggleFCMaster()">⭐ 암기 완료 체크</button>
+    </div>
+    <div id="fc-done-area" style="display:none">
+      <div class="card" style="text-align:center;padding:28px">
+        <div style="font-size:40px;margin-bottom:12px">🎉</div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:8px">세션 완료!</div>
+        <div id="fc-done-msg" style="color:var(--muted);font-size:14px;margin-bottom:20px"></div>
+        <button class="btn btn-primary" onclick="go('fcards')" style="margin-bottom:8px">다른 모드로 하기</button>
+        <button class="btn btn-outline" onclick="go('home')">홈으로 가기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="screen" id="s-mindmap">
   <div class="hdr">
     <button class="hdr-back" onclick="leaveMindmap()">‹</button>
@@ -940,6 +1088,7 @@ const A = {
   qfCat: '전체', qfDiff: '전체', qfPool: 'all', qfCnt: 10,
   qsess: null,
   linkMap: { nodeToQuestions: {}, questionToNodes: {} },
+  flashcards: [],
 };
 
 // ══════════════════════════════════════════════════════════
@@ -1049,6 +1198,18 @@ async function loadUserSettings() {
         A.recs = { ...A.recs, ...s.exam_recs };
         saveRecs();
       }
+
+      // Restore flashcard records: merge keeping higher total
+      if (s.fc_recs && Object.keys(s.fc_recs).length) {
+        const local = getFCRecs();
+        const merged = { ...s.fc_recs };
+        Object.keys(local).forEach(id => {
+          const lt = (local[id].rightCount || 0) + (local[id].wrongCount || 0);
+          const rt = (merged[id] ? (merged[id].rightCount || 0) + (merged[id].wrongCount || 0) : 0);
+          if (lt > rt) merged[id] = local[id];
+        });
+        saveFCRecs(merged);
+      }
     }
   } catch(e) {}
 }
@@ -1058,8 +1219,9 @@ async function syncToSupabase() {
   try {
     const q_recs     = JSON.parse(localStorage.getItem(QR_KEY) || '{}');
     const q_sessions = JSON.parse(localStorage.getItem('sil_q_sessions') || '[]');
+    const fc_recs    = getFCRecs();
     await sb.from('user_settings').upsert(
-      { user_id: _sbUser.id, settings: { model: A.model, q_recs, q_sessions, exam_recs: A.recs } },
+      { user_id: _sbUser.id, settings: { model: A.model, q_recs, q_sessions, exam_recs: A.recs, fc_recs } },
       { onConflict: 'user_id' }
     );
   } catch(e) {}
@@ -1081,6 +1243,7 @@ async function init() {
       if (A.exams.length) {
         await fetchQuestions();
         await fetchLinkMap();
+        await fetchFlashcards();
         await loadUserSettings(); buildYearChips(); updateStats(); loadChat(); go('home'); return;
       }
     } catch(e) {}
@@ -1120,6 +1283,7 @@ async function fetchDB() {
   }
   await fetchQuestions();
   await fetchLinkMap();
+  await fetchFlashcards();
 }
 
 function setLoadMsg(m) { const el = $('load-msg'); if (el) el.textContent = m; }
@@ -1147,6 +1311,7 @@ function go(name, opts) {
   if (name === 'browse') { renderExamList(); }
   if (name === 'mindmap') { setMindmapFocus(opts && opts.focus); }
   if (name === 'stats')   { renderStats(); }
+  if (name === 'fcards')  { renderFCHome(); }
   if (name === 'qfilter') { buildQCatChips(); updateQFilterInfo(); }
   if (name === 'viewer') {
     document.body.classList.add('in-viewer');
@@ -2010,6 +2175,7 @@ function renderStats() {
   renderCategoryChart();
   renderQScoreTrend();
   renderWeakList();
+  renderFCStats();
 }
 
 function renderStatsSummary() {
@@ -2213,6 +2379,292 @@ function renderWeakList() {
   }).join('');
 }
 
+
+// ══════════════════════════════════════════════════════════
+// FLASHCARDS
+// ══════════════════════════════════════════════════════════
+const FC_KEY = 'sil_fc_recs';
+
+function getFCRecs() {
+  try { return JSON.parse(localStorage.getItem(FC_KEY) || '{}'); } catch(e) { return {}; }
+}
+function saveFCRecs(r) {
+  localStorage.setItem(FC_KEY, JSON.stringify(r));
+}
+
+async function fetchFlashcards() {
+  if (A.flashcards && A.flashcards.length) return;
+  try {
+    const r = await fetch('flashcards.json');
+    if (r.ok) { const d = await r.json(); A.flashcards = d.cards || []; }
+  } catch(e) { A.flashcards = []; }
+}
+
+// ── Flashcard state ──
+const FC = {
+  deck: [],      // filtered cards for current session
+  idx: 0,
+  mode: 'all',
+  flipped: false,
+  sessionRight: 0,
+  sessionWrong: 0,
+};
+
+function goFCards() {
+  go('fcards');
+  renderFCHome();
+}
+
+function renderFCHome() {
+  const cards = A.flashcards || [];
+  const recs = getFCRecs();
+  const total = cards.length;
+  const studied = cards.filter(c => recs[c.id]).length;
+  const wrongCards = cards.filter(c => recs[c.id] && recs[c.id].wrongCount > 0);
+  const mastered = cards.filter(c => recs[c.id] && recs[c.id].mastered).length;
+  const smart = cards.filter(c => {
+    const r = recs[c.id];
+    if (!r) return true;
+    if (r.mastered) return false;
+    return (r.wrongCount || 0) > 0 || !r.lastResult;
+  });
+
+  const set = (id, val) => { const el = $(id); if (el) el.textContent = val; };
+  set('fc-mini-total', total);
+  set('fc-mini-studied', studied);
+  set('fc-mini-wrong', wrongCards.length);
+  set('fc-mini-mastered', mastered);
+  set('fc-cnt-all', total + ' 장');
+  set('fc-cnt-wrong', wrongCards.length + ' 장');
+  set('fc-cnt-smart', smart.length + ' 장');
+  set('fc-cnt-mastered', mastered + ' 장');
+}
+
+function startFC(mode) {
+  const cards = A.flashcards || [];
+  const recs = getFCRecs();
+  let deck;
+  if (mode === 'all') {
+    deck = [...cards];
+  } else if (mode === 'wrong') {
+    deck = cards.filter(c => recs[c.id] && recs[c.id].wrongCount > 0);
+  } else if (mode === 'smart') {
+    deck = cards.filter(c => {
+      const r = recs[c.id];
+      if (!r) return true;
+      if (r.mastered) return false;
+      return (r.wrongCount || 0) > 0 || !r.lastResult;
+    });
+  } else if (mode === 'mastered') {
+    deck = cards.filter(c => recs[c.id] && recs[c.id].mastered);
+  }
+
+  if (!deck.length) {
+    alert(mode === 'wrong' ? '오답 카드가 없습니다.' :
+          mode === 'mastered' ? '암기 완료된 카드가 없습니다.' :
+          '카드가 없습니다.');
+    return;
+  }
+
+  // Shuffle
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+
+  FC.deck = deck;
+  FC.idx = 0;
+  FC.mode = mode;
+  FC.flipped = false;
+  FC.sessionRight = 0;
+  FC.sessionWrong = 0;
+
+  const titles = { all: '전체 학습', wrong: '오답 복습', smart: '스마트 복습', mastered: '암기 완료' };
+  const titleEl = $('fc-study-title');
+  if (titleEl) titleEl.textContent = '🃏 ' + (titles[mode] || '플래시카드');
+
+  go('fcstudy');
+  renderFCCard();
+}
+
+function renderFCCard() {
+  const card = FC.deck[FC.idx];
+  if (!card) { showFCDone(); return; }
+
+  FC.flipped = false;
+
+  const prog = FC.deck.length ? Math.round(FC.idx / FC.deck.length * 100) : 0;
+  const fillEl = $('fc-prog-fill');
+  const textEl = $('fc-prog-text');
+  if (fillEl) fillEl.style.width = prog + '%';
+  if (textEl) textEl.textContent = (FC.idx + 1) + ' / ' + FC.deck.length;
+
+  const yearEl = $('fc-year');
+  const qEl = $('fc-question');
+  const aEl = $('fc-answer');
+  const ansArea = $('fc-answer-area');
+  const actionArea = $('fc-action-area');
+  const doneArea = $('fc-done-area');
+
+  if (yearEl) yearEl.textContent = card.year;
+  if (qEl) qEl.textContent = card.question;
+  if (aEl) aEl.textContent = card.answer;
+  if (ansArea) ansArea.classList.remove('show');
+  if (actionArea) actionArea.style.display = 'none';
+  if (doneArea) doneArea.style.display = 'none';
+
+  // Update master button
+  const recs = getFCRecs();
+  const rec = recs[card.id] || {};
+  const masterBtn = $('fc-master-btn');
+  if (masterBtn) {
+    masterBtn.classList.toggle('is-master', !!rec.mastered);
+    masterBtn.textContent = rec.mastered ? '⭐ 암기 완료 (해제하기)' : '⭐ 암기 완료 체크';
+  }
+}
+
+function flipFC() {
+  if (FC.flipped) return;
+  FC.flipped = true;
+  const ansArea = $('fc-answer-area');
+  const actionArea = $('fc-action-area');
+  if (ansArea) ansArea.classList.add('show');
+  if (actionArea) actionArea.style.display = '';
+}
+
+function recordFC(isRight) {
+  const card = FC.deck[FC.idx];
+  if (!card) return;
+
+  const recs = getFCRecs();
+  const rec = recs[card.id] || { wrongCount: 0, rightCount: 0, mastered: false, lastDate: null, lastResult: null };
+  if (isRight) {
+    rec.rightCount = (rec.rightCount || 0) + 1;
+    FC.sessionRight++;
+  } else {
+    rec.wrongCount = (rec.wrongCount || 0) + 1;
+    FC.sessionWrong++;
+  }
+  rec.lastResult = isRight ? 'right' : 'wrong';
+  rec.lastDate = new Date().toISOString().slice(0, 10);
+  recs[card.id] = rec;
+  saveFCRecs(recs);
+
+  FC.idx++;
+  if (FC.idx >= FC.deck.length) {
+    showFCDone();
+  } else {
+    renderFCCard();
+  }
+}
+
+function toggleFCMaster() {
+  const card = FC.deck[FC.idx];
+  if (!card) return;
+  const recs = getFCRecs();
+  const rec = recs[card.id] || { wrongCount: 0, rightCount: 0, mastered: false };
+  rec.mastered = !rec.mastered;
+  recs[card.id] = rec;
+  saveFCRecs(recs);
+
+  const masterBtn = $('fc-master-btn');
+  if (masterBtn) {
+    masterBtn.classList.toggle('is-master', rec.mastered);
+    masterBtn.textContent = rec.mastered ? '⭐ 암기 완료 (해제하기)' : '⭐ 암기 완료 체크';
+  }
+}
+
+function showFCDone() {
+  const actionArea = $('fc-action-area');
+  const doneArea = $('fc-done-area');
+  const doneMsg = $('fc-done-msg');
+  if (actionArea) actionArea.style.display = 'none';
+  if (doneArea) doneArea.style.display = '';
+  if (doneMsg) {
+    const total = FC.deck.length;
+    const pct = total ? Math.round(FC.sessionRight / total * 100) : 0;
+    doneMsg.textContent = `맞음 ${FC.sessionRight}장 · 틀림 ${FC.sessionWrong}장 · 정답률 ${pct}%`;
+  }
+  syncToSupabase();
+}
+
+function exitFC() {
+  go('fcards');
+  renderFCHome();
+}
+
+// ── Flashcard Stats ──
+function renderFCStats() {
+  const cards = A.flashcards || [];
+  const recs = getFCRecs();
+  const card = $('fc-stats-card');
+  if (!card) return;
+
+  const studied = Object.keys(recs).length;
+  if (!studied) { card.style.display = 'none'; return; }
+  card.style.display = '';
+
+  const mastered = Object.values(recs).filter(r => r.mastered).length;
+  const wrongCards = Object.values(recs).filter(r => r.wrongCount > 0).length;
+  const totalCards = cards.length;
+
+  const sumEl = $('fc-stats-summary');
+  if (sumEl) sumEl.innerHTML = `
+    <div class="stat-item"><div class="stat-num">${totalCards}</div><div class="stat-lbl">전체 카드</div></div>
+    <div class="stat-item"><div class="stat-num">${studied}</div><div class="stat-lbl">학습한 카드</div></div>
+    <div class="stat-item"><div class="stat-num">${wrongCards}</div><div class="stat-lbl">오답 있음</div></div>
+    <div class="stat-item"><div class="stat-num">${mastered}</div><div class="stat-lbl">암기 완료</div></div>`;
+
+  // Wrong count distribution
+  const distEl = $('fc-stats-dist');
+  if (distEl) {
+    const buckets = { '0': 0, '1': 0, '2-3': 0, '4+': 0 };
+    Object.values(recs).forEach(r => {
+      const w = r.wrongCount || 0;
+      if (w === 0) buckets['0']++;
+      else if (w === 1) buckets['1']++;
+      else if (w <= 3) buckets['2-3']++;
+      else buckets['4+']++;
+    });
+    const maxV = Math.max(...Object.values(buckets), 1);
+    const colors = { '0': '#16a34a', '1': '#fbbf24', '2-3': '#f97316', '4+': '#dc2626' };
+    distEl.innerHTML = Object.entries(buckets).map(([label, count]) => {
+      const pct = Math.round(count / maxV * 100);
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div style="min-width:36px;text-align:right;font-size:12px;color:var(--muted)">${label}회</div>
+        <div style="flex:1;height:12px;background:var(--border);border-radius:4px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${colors[label]};border-radius:4px"></div>
+        </div>
+        <div style="min-width:30px;font-size:12px;font-weight:600">${count}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Wrong top 10
+  const weakEl = $('fc-stats-weak');
+  if (weakEl) {
+    const ranked = cards.map(c => {
+      const r = recs[c.id];
+      if (!r || !(r.wrongCount > 0)) return null;
+      return { c, wrongCount: r.wrongCount || 0 };
+    }).filter(Boolean).sort((a, b) => b.wrongCount - a.wrongCount).slice(0, 10);
+
+    if (!ranked.length) {
+      weakEl.innerHTML = '<p style="text-align:center;color:var(--muted);font-size:13px;padding:12px">오답 카드가 없습니다.</p>';
+    } else {
+      weakEl.innerHTML = ranked.map(({ c, wrongCount }) => {
+        const txt = c.question.length > 55 ? c.question.slice(0, 55) + '...' : c.question;
+        return `<div class="stats-weak-item">
+          <div class="stats-weak-pct" style="color:var(--error)">${wrongCount}회</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escChat(txt)}</div>
+            <div style="font-size:11px;color:var(--muted)">${c.year}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+}
 // ══════════════════════════════════════════════════════════
 // BOOT
 // ══════════════════════════════════════════════════════════
