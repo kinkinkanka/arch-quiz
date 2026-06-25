@@ -567,6 +567,13 @@ input, select, textarea { font-size: 16px !important; }
 .fc-my-answer-label { font-size:11px; font-weight:700; color:#d97706; margin-bottom:6px; }
 .fc-my-answer-text { font-size:14px; line-height:1.75; white-space:pre-wrap; color:var(--text); }
 .fc-no-answer { font-size:13px; color:var(--muted); font-style:italic; }
+.fc-batch-btn {
+  padding:7px 14px; border:1.5px solid var(--border); border-radius:20px;
+  background:var(--card); cursor:pointer; font-size:13px; font-weight:600;
+  color:var(--muted); transition:all .15s;
+}
+.fc-batch-btn:hover { border-color:var(--primary); color:var(--primary); }
+.fc-batch-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
 
 /* ── Responsive ── */
 @media (max-width:899px) {
@@ -983,6 +990,18 @@ input, select, textarea { font-size: 16px !important; }
     </div>
     <div class="card">
       <div class="sec">학습 모드 선택</div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">🃏 몇 장씩 풀기</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="fc-batch-btn" data-val="5"  onclick="setFCBatch(5)">5장</button>
+          <button class="fc-batch-btn" data-val="10" onclick="setFCBatch(10)">10장</button>
+          <button class="fc-batch-btn" data-val="15" onclick="setFCBatch(15)">15장</button>
+          <button class="fc-batch-btn" data-val="20" onclick="setFCBatch(20)">20장</button>
+          <button class="fc-batch-btn" data-val="0"  onclick="setFCBatch(0)">전체</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">틀린 문제는 세션 내에서 자동으로 재등장합니다 🔁</div>
+      </div>
+      <div class="sec" style="font-size:13px;margin-bottom:10px">학습 모드 선택</div>
       <div class="fc-mode-grid">
         <button class="fc-mode-btn" onclick="startFC('all')">
           <span class="fc-mode-icon">📚</span>
@@ -2435,17 +2454,27 @@ async function fetchFlashcards() {
 
 // ── Flashcard state ──
 const FC = {
-  deck: [],      // filtered cards for current session
+  queue: [],       // live queue (wrong cards re-inserted)
+  originalSize: 0, // batch size before re-queuing
   idx: 0,
   mode: 'all',
+  batchSize: 10,   // 0 = all
   flipped: false,
   sessionRight: 0,
   sessionWrong: 0,
+  requeueCount: 0, // times cards were re-queued this session
 };
 
 function goFCards() {
   go('fcards');
   renderFCHome();
+}
+
+function setFCBatch(n) {
+  FC.batchSize = n;
+  document.querySelectorAll('.fc-batch-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.val) === n);
+  });
 }
 
 function renderFCHome() {
@@ -2462,15 +2491,23 @@ function renderFCHome() {
     return (r.wrongCount || 0) > 0 || !r.lastResult;
   });
 
+  const bs = FC.batchSize;
+  const cap = (n) => bs > 0 ? Math.min(n, bs) : n;
+
   const set = (id, val) => { const el = $(id); if (el) el.textContent = val; };
   set('fc-mini-total', total);
   set('fc-mini-studied', studied);
   set('fc-mini-wrong', wrongCards.length);
   set('fc-mini-mastered', mastered);
-  set('fc-cnt-all', total + ' 장');
-  set('fc-cnt-wrong', wrongCards.length + ' 장');
-  set('fc-cnt-smart', smart.length + ' 장');
-  set('fc-cnt-mastered', mastered + ' 장');
+  set('fc-cnt-all', cap(total) + ' 장');
+  set('fc-cnt-wrong', cap(wrongCards.length) + ' 장');
+  set('fc-cnt-smart', cap(smart.length) + ' 장');
+  set('fc-cnt-mastered', cap(mastered) + ' 장');
+
+  // Sync batch button active state
+  document.querySelectorAll('.fc-batch-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.val) === FC.batchSize);
+  });
 }
 
 function startFC(mode) {
@@ -2505,12 +2542,17 @@ function startFC(mode) {
     [deck[i], deck[j]] = [deck[j], deck[i]];
   }
 
-  FC.deck = deck;
+  // Apply batch size limit
+  if (FC.batchSize > 0) deck = deck.slice(0, FC.batchSize);
+
+  FC.queue = deck;
+  FC.originalSize = deck.length;
   FC.idx = 0;
   FC.mode = mode;
   FC.flipped = false;
   FC.sessionRight = 0;
   FC.sessionWrong = 0;
+  FC.requeueCount = 0;
 
   const titles = { all: '전체 학습', wrong: '오답 복습', smart: '스마트 복습', mastered: '암기 완료' };
   const titleEl = $('fc-study-title');
@@ -2521,16 +2563,18 @@ function startFC(mode) {
 }
 
 function renderFCCard() {
-  const card = FC.deck[FC.idx];
+  const card = FC.queue[FC.idx];
   if (!card) { showFCDone(); return; }
 
   FC.flipped = false;
 
-  const prog = FC.deck.length ? Math.round(FC.idx / FC.deck.length * 100) : 0;
+  const qTotal = FC.queue.length;
+  const prog = qTotal ? Math.round(FC.idx / qTotal * 100) : 0;
   const fillEl = $('fc-prog-fill');
   const textEl = $('fc-prog-text');
   if (fillEl) fillEl.style.width = prog + '%';
-  if (textEl) textEl.textContent = (FC.idx + 1) + ' / ' + FC.deck.length;
+  const reStr = FC.requeueCount > 0 ? ' 🔁' + FC.requeueCount : '';
+  if (textEl) textEl.textContent = (FC.idx + 1) + ' / ' + qTotal + reStr;
 
   const yearEl = $('fc-year');
   const qEl = $('fc-question');
@@ -2589,7 +2633,7 @@ function flipFC() {
 }
 
 function recordFC(isRight) {
-  const card = FC.deck[FC.idx];
+  const card = FC.queue[FC.idx];
   if (!card) return;
 
   const recs = getFCRecs();
@@ -2600,6 +2644,10 @@ function recordFC(isRight) {
   } else {
     rec.wrongCount = (rec.wrongCount || 0) + 1;
     FC.sessionWrong++;
+    // Re-insert card 3 positions later so it appears again
+    const reinsertAt = Math.min(FC.idx + 1 + 3, FC.queue.length);
+    FC.queue.splice(reinsertAt, 0, card);
+    FC.requeueCount++;
   }
   rec.lastResult = isRight ? 'right' : 'wrong';
   rec.lastDate = new Date().toISOString().slice(0, 10);
@@ -2607,7 +2655,7 @@ function recordFC(isRight) {
   saveFCRecs(recs);
 
   FC.idx++;
-  if (FC.idx >= FC.deck.length) {
+  if (FC.idx >= FC.queue.length) {
     showFCDone();
   } else {
     renderFCCard();
@@ -2615,7 +2663,7 @@ function recordFC(isRight) {
 }
 
 function toggleFCMaster() {
-  const card = FC.deck[FC.idx];
+  const card = FC.queue[FC.idx];
   if (!card) return;
   const recs = getFCRecs();
   const rec = recs[card.id] || { wrongCount: 0, rightCount: 0, mastered: false };
@@ -2637,9 +2685,9 @@ function showFCDone() {
   if (actionArea) actionArea.style.display = 'none';
   if (doneArea) doneArea.style.display = '';
   if (doneMsg) {
-    const total = FC.deck.length;
-    const pct = total ? Math.round(FC.sessionRight / total * 100) : 0;
-    doneMsg.textContent = `맞음 ${FC.sessionRight}장 · 틀림 ${FC.sessionWrong}장 · 정답률 ${pct}%`;
+    const pct = FC.originalSize ? Math.round(FC.sessionRight / FC.originalSize * 100) : 0;
+    const reStr = FC.requeueCount > 0 ? ` · 재등장 ${FC.requeueCount}회` : '';
+    doneMsg.textContent = `맞음 ${FC.sessionRight}장 · 틀림 ${FC.sessionWrong}장 · 정답률 ${pct}%${reStr}`;
   }
   syncToSupabase();
 }
