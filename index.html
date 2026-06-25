@@ -542,6 +542,26 @@ input, select, textarea { font-size: 16px !important; }
 .fc-progress-bar { flex:1; height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
 .fc-progress-fill { height:100%; background:var(--primary); transition:width .3s; }
 .fc-progress-text { font-size:12px; color:var(--muted); min-width:52px; text-align:right; }
+.fc-self-area { margin-bottom:14px; }
+.fc-self-label { font-size:12px; font-weight:700; color:var(--muted); margin-bottom:6px; display:flex; align-items:center; gap:5px; }
+.fc-self-textarea {
+  width:100%; min-height:110px; padding:12px 14px;
+  border:1.5px solid var(--border); border-radius:10px;
+  font-size:14px; line-height:1.75; font-family:inherit;
+  resize:vertical; outline:none; transition:border .15s; background:#fff;
+  margin-bottom:10px;
+}
+.fc-self-textarea:focus { border-color:var(--primary); }
+.fc-reveal-btn {
+  width:100%; padding:13px; background:var(--primary); color:#fff;
+  border:none; border-radius:10px; font-size:15px; font-weight:700;
+  cursor:pointer; margin-bottom:14px; transition:background .15s;
+}
+.fc-reveal-btn:active { background:var(--primary-d); }
+.fc-my-answer-section { border-top:1px solid #fde68a; padding:16px 24px; background:#fffbeb; }
+.fc-my-answer-label { font-size:11px; font-weight:700; color:#d97706; margin-bottom:6px; }
+.fc-my-answer-text { font-size:14px; line-height:1.75; white-space:pre-wrap; color:var(--text); }
+.fc-no-answer { font-size:13px; color:var(--muted); font-style:italic; }
 
 /* ── Responsive ── */
 @media (max-width:899px) {
@@ -995,16 +1015,24 @@ input, select, textarea { font-size: 16px !important; }
       <div class="fc-progress-bar"><div class="fc-progress-fill" id="fc-prog-fill" style="width:0%"></div></div>
       <span class="fc-progress-text" id="fc-prog-text">0 / 0</span>
     </div>
-    <div class="fc-card" onclick="flipFC()" id="fc-card">
+    <div class="fc-card" id="fc-card">
       <div class="fc-front" id="fc-front">
         <span class="fc-year-tag" id="fc-year"></span>
         <div class="fc-question" id="fc-question"></div>
-        <div class="fc-tap-hint">탭하여 정답 보기 👇</div>
       </div>
       <div class="fc-answer-area" id="fc-answer-area">
-        <div class="fc-answer-label">정답</div>
-        <div class="fc-answer-text" id="fc-answer"></div>
+        <div class="fc-my-answer-section" id="fc-my-answer-section" style="display:none">
+          <div class="fc-my-answer-label">✏️ 내 답안</div>
+          <div class="fc-my-answer-text" id="fc-my-answer-text"></div>
+        </div>
+        <div class="fc-answer-label" style="padding:16px 24px 4px">정답</div>
+        <div class="fc-answer-text" id="fc-answer" style="padding:0 24px 20px"></div>
       </div>
+    </div>
+    <div class="fc-self-area" id="fc-self-area">
+      <div class="fc-self-label">✏️ 내 답 작성 <span style="font-weight:400;color:var(--muted)">(선택사항)</span></div>
+      <textarea class="fc-self-textarea" id="fc-self-input" placeholder="답을 직접 써보고 정답과 비교하세요...&#10;(작성하지 않고 바로 확인해도 됩니다)"></textarea>
+      <button class="fc-reveal-btn" onclick="flipFC()">정답 확인 →</button>
     </div>
     <div id="fc-action-area" style="display:none">
       <div class="fc-btn-row">
@@ -2506,14 +2534,21 @@ function renderFCCard() {
   const actionArea = $('fc-action-area');
   const doneArea = $('fc-done-area');
 
+  const sanitize = s => (s || '').replace(/\\n/g, '\n');
   if (yearEl) yearEl.textContent = card.year;
-  if (qEl) qEl.textContent = card.question;
-  if (aEl) aEl.textContent = card.answer;
+  if (qEl) qEl.textContent = sanitize(card.question);
+  if (aEl) aEl.textContent = sanitize(card.answer);
   if (ansArea) ansArea.classList.remove('show');
   if (actionArea) actionArea.style.display = 'none';
   if (doneArea) doneArea.style.display = 'none';
 
-  // Update master button
+  const selfInput = $('fc-self-input');
+  const selfArea = $('fc-self-area');
+  const myAnswerSection = $('fc-my-answer-section');
+  if (selfInput) selfInput.value = '';
+  if (selfArea) selfArea.style.display = '';
+  if (myAnswerSection) myAnswerSection.style.display = 'none';
+
   const recs = getFCRecs();
   const rec = recs[card.id] || {};
   const masterBtn = $('fc-master-btn');
@@ -2526,8 +2561,24 @@ function renderFCCard() {
 function flipFC() {
   if (FC.flipped) return;
   FC.flipped = true;
+
+  const selfInput = $('fc-self-input');
+  const selfArea = $('fc-self-area');
+  const myAnswerSection = $('fc-my-answer-section');
+  const myAnswerText = $('fc-my-answer-text');
   const ansArea = $('fc-answer-area');
   const actionArea = $('fc-action-area');
+
+  // Hide textarea, show typed answer if any
+  if (selfArea) selfArea.style.display = 'none';
+  if (selfInput && myAnswerSection && myAnswerText) {
+    const typed = selfInput.value.trim();
+    if (typed) {
+      myAnswerText.textContent = typed;
+      myAnswerSection.style.display = '';
+    }
+  }
+
   if (ansArea) ansArea.classList.add('show');
   if (actionArea) actionArea.style.display = '';
 }
