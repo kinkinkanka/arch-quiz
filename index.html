@@ -1033,6 +1033,7 @@ input, select, textarea { font-size: 16px !important; }
   <div class="hdr">
     <button class="hdr-back" onclick="exitFC()">‹</button>
     <h1 id="fc-study-title">플래시카드</h1>
+    <button id="fc-mute-btn" onclick="toggleFCMute()" title="소리 on/off" style="background:none;border:none;font-size:20px;cursor:pointer;padding:2px 6px;line-height:1;border-radius:6px;color:var(--text)">🔊</button>
   </div>
   <div class="wrap">
     <div class="fc-progress">
@@ -2452,6 +2453,45 @@ async function fetchFlashcards() {
   } catch(e) { A.flashcards = []; }
 }
 
+// ── Sound engine (Web Audio API) ──
+const SND = (() => {
+  let ctx = null;
+  let muted = false;
+  const getCtx = () => {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    return ctx;
+  };
+  const tone = (freq, dur, type='sine', vol=0.28, delay=0) => {
+    if (muted) return;
+    try {
+      const ac = getCtx();
+      const osc = ac.createOscillator();
+      const g   = ac.createGain();
+      osc.connect(g); g.connect(ac.destination);
+      osc.type = type; osc.frequency.value = freq;
+      const t = ac.currentTime + delay;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(vol, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      osc.start(t); osc.stop(t + dur + 0.05);
+    } catch(e) {}
+  };
+  return {
+    toggleMute() { muted = !muted; return muted; },
+    isMuted() { return muted; },
+    // Soft click — reveal answer
+    reveal()  { tone(520, 0.07, 'sine', 0.2); },
+    // Two ascending bright tones — correct
+    correct() { tone(880, 0.12, 'sine', 0.28, 0); tone(1108, 0.22, 'sine', 0.22, 0.11); },
+    // Two descending muted tones — wrong
+    wrong()   { tone(300, 0.14, 'triangle', 0.22, 0); tone(220, 0.22, 'triangle', 0.16, 0.13); },
+    // Triple chime — mastered
+    master()  { tone(880, 0.1, 'sine', 0.24, 0); tone(1108, 0.1, 'sine', 0.24, 0.1); tone(1320, 0.22, 'sine', 0.24, 0.2); },
+    // Short fanfare — session done
+    done()    { [523,659,784,1047].forEach((f,i) => tone(f, i===3?0.35:0.1, 'sine', 0.28, i*0.13)); },
+  };
+})();
+
 // ── Flashcard state ──
 const FC = {
   queue: [],       // live queue (wrong cards re-inserted)
@@ -2620,6 +2660,7 @@ function flipFC() {
 
   // Hide textarea, show typed answer if any
   if (selfArea) selfArea.style.display = 'none';
+  SND.reveal();
   if (selfInput && myAnswerSection && myAnswerText) {
     const typed = selfInput.value.trim();
     if (typed) {
@@ -2641,9 +2682,11 @@ function recordFC(isRight) {
   if (isRight) {
     rec.rightCount = (rec.rightCount || 0) + 1;
     FC.sessionRight++;
+    SND.correct();
   } else {
     rec.wrongCount = (rec.wrongCount || 0) + 1;
     FC.sessionWrong++;
+    SND.wrong();
     // Re-insert card 3 positions later so it appears again
     const reinsertAt = Math.min(FC.idx + 1 + 3, FC.queue.length);
     FC.queue.splice(reinsertAt, 0, card);
@@ -2668,6 +2711,7 @@ function toggleFCMaster() {
   const recs = getFCRecs();
   const rec = recs[card.id] || { wrongCount: 0, rightCount: 0, mastered: false };
   rec.mastered = !rec.mastered;
+  if (rec.mastered) SND.master();
   recs[card.id] = rec;
   saveFCRecs(recs);
 
@@ -2679,6 +2723,7 @@ function toggleFCMaster() {
 }
 
 function showFCDone() {
+  SND.done();
   const actionArea = $('fc-action-area');
   const doneArea = $('fc-done-area');
   const doneMsg = $('fc-done-msg');
@@ -2690,6 +2735,12 @@ function showFCDone() {
     doneMsg.textContent = `맞음 ${FC.sessionRight}장 · 틀림 ${FC.sessionWrong}장 · 정답률 ${pct}%${reStr}`;
   }
   syncToSupabase();
+}
+
+function toggleFCMute() {
+  const muted = SND.toggleMute();
+  const btn = $('fc-mute-btn');
+  if (btn) btn.textContent = muted ? '🔇' : '🔊';
 }
 
 function exitFC() {
